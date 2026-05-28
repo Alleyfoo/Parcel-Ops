@@ -1395,6 +1395,158 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
     </div>
     """)
 
+    st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="section">
+      <div class="section-head">
+        <div class="left"><h2>LLM vs Regex <span class="muted">— where AI outperforms pattern matching</span></h2></div>
+        <div class="right">6 test cases</div>
+      </div>
+    </div>
+    """)
+
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-detail-text" style="margin-bottom:20px;">
+      Regex-based classification works well for structured data but struggles with ambiguity, context, and multi-language inputs.
+      Large Language Models (LLMs) understand semantics, infer context, and handle natural language descriptions.
+      Below are real-world cases where LLM classification outperforms regex pattern matching.
+    </div>
+    """)
+
+    # Import LLM classifier
+    from llm_classifier import get_all_test_cases, get_statistics
+
+    stats = get_statistics()
+    test_cases = get_all_test_cases()
+
+    # Statistics summary
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Test Cases", stats["total_cases"])
+    with col2:
+        st.metric("Regex Accuracy", f"{stats['regex_accuracy']:.0%}")
+    with col3:
+        st.metric("LLM Accuracy", f"{stats['llm_accuracy']:.0%}")
+    with col4:
+        improvement = stats['llm_accuracy'] - stats['regex_accuracy']
+        st.metric("LLM Improvement", f"+{improvement:.0%}")
+
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    # Test cases
+    for i, case in enumerate(test_cases, 1):
+        with st.expander(f"Case {i}: {case['description']}", expanded=(i == 1)):
+            col_desc, col_context = st.columns([1, 1])
+            with col_desc:
+                st.markdown("**Description:**")
+                st.code(case['description'])
+            with col_context:
+                st.markdown("**Context:**")
+                st.info(case['context'])
+
+            st.markdown("---")
+
+            col_regex, col_llm = st.columns([1, 1])
+
+            with col_regex:
+                regex = case['regex_result']
+                status_icon = "✓" if regex.correct else "✗"
+                status_color = "green" if regex.correct else "red"
+
+                st.markdown(f"**Regex Classification** <span style='color:{status_color}'>{status_icon}</span>", unsafe_allow_html=True)
+                st.markdown(f"**HS Code:** `{regex.hs_code}`")
+                st.markdown(f"**Confidence:** {regex.confidence:.0%}")
+                st.markdown("**Reasoning:**")
+                st.caption(regex.reasoning)
+
+                if not regex.correct:
+                    st.error("Incorrect classification")
+
+            with col_llm:
+                llm = case['llm_result']
+                status_icon = "✓" if llm.correct else "✗"
+                status_color = "green" if llm.correct else "red"
+
+                st.markdown(f"**LLM Classification** <span style='color:{status_color}'>{status_icon}</span>", unsafe_allow_html=True)
+                st.markdown(f"**HS Code:** `{llm.hs_code}`")
+                st.markdown(f"**Confidence:** {llm.confidence:.0%}")
+                st.markdown("**Reasoning:**")
+                st.caption(llm.reasoning)
+
+                if llm.correct:
+                    st.success("Correct classification")
+
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-details">
+      <div class="pipeline-details-title">Why LLMs Excel at Classification</div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">1. Semantic Understanding</div>
+        <div class="pipeline-detail-text">
+          LLMs understand that "plastic housing for electronic device" is primarily an electronic component,
+          not a plastic article. They grasp the concept of "essential character" — a key principle in HS classification.
+          Regex only sees keywords and cannot infer relationships between them.
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">2. Multi-Language Support</div>
+        <div class="pipeline-detail-text">
+          LLMs are trained on multilingual data and can classify descriptions in German, Chinese, French, etc.
+          without separate regex patterns for each language. They understand that "Elektronische Spannungsregler"
+          (German) and "电子稳压器" (Chinese) both mean "electronic voltage regulators".
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">3. Context Awareness</div>
+        <div class="pipeline-detail-text">
+          When given context like "for repair of industrial control system", LLMs apply General Rule of Interpretation 3(b):
+          kits are classified by their essential character. Regex cannot make this inference from keywords alone.
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">4. Natural Language Explanations</div>
+        <div class="pipeline-detail-text">
+          LLMs provide human-readable reasoning that customs officers can understand and verify.
+          This builds trust and enables faster dispute resolution. Regex provides only confidence scores
+          without explanation of why a classification was chosen.
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">5. Handling Ambiguity</div>
+        <div class="pipeline-detail-text">
+          Products like "ceramic coffee mug with electronic heating element" are genuinely ambiguous.
+          LLMs can weigh competing factors (ceramic vs electronic) and apply classification rules.
+          Regex would need explicit rules for every possible combination, which is impractical.
+        </div>
+      </div>
+    </div>
+    """)
+
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-flow">
+      <div class="pipeline-flow-title">Hybrid Approach: Best of Both Worlds</div>
+      <div class="pipeline-flow-note">
+        <strong>Production Strategy:</strong> Use regex for high-confidence structured data (HS codes, CN codes, SKUs).
+        Route ambiguous descriptions, multi-language inputs, and low-confidence regex results to LLM.
+        This balances speed (regex: ~10ms) with accuracy (LLM: ~500ms) and cost (LLM API calls are expensive).
+        <br><br>
+        <strong>Confidence Thresholds:</strong> Regex confidence > 90% → accept. 70-90% → LLM verification. < 70% → LLM classification.
+        This ensures fast processing for clear cases while leveraging AI for complex scenarios.
+      </div>
+    </div>
+    """)
+
 
 # ---------------------------------------------------------------------------
 # Main
