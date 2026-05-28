@@ -452,6 +452,139 @@ def render_data_input() -> tuple[pd.DataFrame, dict]:
     return load_demo_data()
 
 
+def render_filters(
+    df: pd.DataFrame,
+    lane_statuses: dict[str, dict[str, LaneStatus]],
+) -> tuple[pd.DataFrame, dict[str, dict[str, LaneStatus]]]:
+    """Render filter bar and return filtered dataframe and lane statuses."""
+    
+    with st.expander("Filters & Search", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            carriers = sorted(df["carrier"].unique().tolist())
+            selected_carriers = st.multiselect(
+                "Carrier",
+                options=carriers,
+                default=carriers,
+                help="Filter by carrier name"
+            )
+            
+            origins = sorted(df["origin"].unique().tolist())
+            selected_origins = st.multiselect(
+                "Origin",
+                options=origins,
+                default=origins,
+                help="Filter by country of origin"
+            )
+        
+        with col2:
+            # Lane status filter
+            status_options = ["All", "Critical only", "Warning or worse", "Has pending lanes"]
+            selected_status = st.selectbox(
+                "Lane Status",
+                options=status_options,
+                help="Filter by lane status severity"
+            )
+            
+            # Search
+            search_term = st.text_input(
+                "Search",
+                placeholder="Batch ID or HS code...",
+                help="Search by batch ID or HS code"
+            )
+        
+        with col3:
+            # Date range
+            min_date = df["expected_arrival"].min()
+            max_date = df["expected_arrival"].max()
+            
+            date_range = st.date_input(
+                "Arrival Date Range",
+                value=(min_date, max_date),
+                min_value=min_date,
+                max_value=max_date,
+                help="Filter by expected arrival date"
+            )
+            
+            # Export button
+            if st.button("Export Filtered Data", type="secondary"):
+                # Prepare export data
+                export_df = df.copy()
+                export_df["critical_lanes"] = export_df["batch_id"].apply(
+                    lambda bid: ", ".join([
+                        lane for lane, status in lane_statuses.get(bid, {}).items()
+                        if status == "critical"
+                    ]) or "None"
+                )
+                csv = export_df.to_csv(index=False)
+                st.download_button(
+                    label="Download CSV",
+                    data=csv,
+                    file_name=f"filtered_batches_{TODAY.isoformat()}.csv",
+                    mime="text/csv"
+                )
+    
+    # Apply filters
+    filtered_df = df.copy()
+    
+    # Carrier filter
+    if selected_carriers:
+        filtered_df = filtered_df[filtered_df["carrier"].isin(selected_carriers)]
+    
+    # Origin filter
+    if selected_origins:
+        filtered_df = filtered_df[filtered_df["origin"].isin(selected_origins)]
+    
+    # Date range filter
+    if len(date_range) == 2:
+        start_date, end_date = date_range
+        filtered_df = filtered_df[
+            (filtered_df["expected_arrival"] >= start_date) &
+            (filtered_df["expected_arrival"] <= end_date)
+        ]
+    
+    # Search filter
+    if search_term:
+        search_lower = search_term.lower()
+        filtered_df = filtered_df[
+            filtered_df["batch_id"].str.lower().str.contains(search_lower, na=False) |
+            filtered_df["hs_code"].astype(str).str.lower().str.contains(search_lower, na=False)
+        ]
+    
+    # Lane status filter
+    if selected_status != "All":
+        batch_ids = filtered_df["batch_id"].tolist()
+        filtered_batch_ids = []
+        
+        for bid in batch_ids:
+            lanes = lane_statuses.get(bid, {})
+            if selected_status == "Critical only":
+                if any(status == "critical" for status in lanes.values()):
+                    filtered_batch_ids.append(bid)
+            elif selected_status == "Warning or worse":
+                if any(status in ["critical", "warning"] for status in lanes.values()):
+                    filtered_batch_ids.append(bid)
+            elif selected_status == "Has pending lanes":
+                if any(status == "pending" for status in lanes.values()):
+                    filtered_batch_ids.append(bid)
+        
+        filtered_df = filtered_df[filtered_df["batch_id"].isin(filtered_batch_ids)]
+    
+    # Filter lane_statuses to match filtered_df
+    filtered_batch_ids = set(filtered_df["batch_id"].tolist())
+    filtered_statuses = {
+        bid: lanes for bid, lanes in lane_statuses.items()
+        if bid in filtered_batch_ids
+    }
+    
+    # Show filter summary
+    if len(filtered_df) < len(df):
+        st.info(f"Showing {len(filtered_df)} of {len(df)} batches")
+    
+    return filtered_df, filtered_statuses
+
+
 # ---------------------------------------------------------------------------
 # Data Pipeline Showcase
 # ---------------------------------------------------------------------------
@@ -1276,6 +1409,9 @@ def main() -> None:
 
     with tab_dashboard:
         df, lane_statuses = render_data_input()
+        
+        # Apply filters
+        df, lane_statuses = render_filters(df, lane_statuses)
 
         kpis = compute_kpis(df, lane_statuses, today=TODAY)
         render_kpi_strip(kpis)
