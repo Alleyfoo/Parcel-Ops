@@ -396,3 +396,87 @@ def demo_data_freshness() -> list[FreshnessEntry]:
         FreshnessEntry("Document Store", "partial", "8 min ago", "3 batches with doc issues (FI-001, FI-007, FI-010)"),
         FreshnessEntry("EU Truck Schedule", "missing", "—", "Integration not yet configured"),
     ]
+
+
+# ---------------------------------------------------------------------------
+# Diagnostics — automated issue detection and recommendations
+# ---------------------------------------------------------------------------
+
+@dataclass
+class DiagnosticEntry:
+    batch_id: str
+    issue_type: str
+    severity: str
+    confidence: float
+    declared: str
+    expected: str
+    source: str
+    detail: str
+    suggested_action: str
+    duty_impact: str
+
+
+def demo_diagnostics() -> list[DiagnosticEntry]:
+    """Return mock diagnostics for demo scenarios."""
+    return [
+        DiagnosticEntry(
+            batch_id="FI-2026-007",
+            issue_type="hs_mismatch",
+            severity="critical",
+            confidence=0.92,
+            declared="3926.90 (Plastic articles)",
+            expected="8542.31 (Electronic integrated circuits)",
+            source="Document Store",
+            detail="Commercial invoice describes 'electronic components, circuit boards, ICs' but HS code 3926.90 is for plastic articles. Mismatch detected via invoice text analysis.",
+            suggested_action="Contact shipper immediately. Amend H7 filing before customs inspection. Prepare for potential duty recalculation.",
+            duty_impact="3.7% vs 0% = ~€2,100 additional duty",
+        ),
+        DiagnosticEntry(
+            batch_id="FI-2026-001",
+            issue_type="doc_missing",
+            severity="high",
+            confidence=0.85,
+            declared="8471.30 (Data processing machines)",
+            expected="8471.30 (Data processing machines)",
+            source="Document Store",
+            detail="Commercial invoice not received. Cannot validate HS code or declared value. Customs broker notified but no response in 4 hours.",
+            suggested_action="Escalate to shipper. Request invoice via DHL portal. Consider provisional H7 filing with estimated value.",
+            duty_impact="Unknown — invoice required for duty calculation",
+        ),
+        DiagnosticEntry(
+            batch_id="FI-2026-004",
+            issue_type="ens_missing",
+            severity="high",
+            confidence=0.95,
+            declared="8517.62 (Telecom equipment)",
+            expected="8517.62 (Telecom equipment)",
+            source="ICS2 Portal",
+            detail="Entry Summary Declaration (ENS) not filed. Shipment arriving in 2 days from Turkey (non-EU). ENS required 24h before arrival.",
+            suggested_action="File ENS immediately via ICS2 portal. Contact Kuehne+Nagel for commercial invoice to complete filing.",
+            duty_impact="0% duty but €500/day penalty for late ENS filing",
+        ),
+        DiagnosticEntry(
+            batch_id="FI-2026-009",
+            issue_type="sla_breach",
+            severity="critical",
+            confidence=0.98,
+            declared="6403.99 (Footwear)",
+            expected="6403.99 (Footwear)",
+            source="Tracking DB",
+            detail="72 hours since arrival. 3 delivery attempts failed. Customer not reachable. SLA breached by 24 hours.",
+            suggested_action="Contact customer via alternate channel. Arrange depot pickup or return to sender. Escalate to support manager.",
+            duty_impact="N/A — duty already paid",
+        ),
+        DiagnosticEntry(
+            batch_id="FI-2026-010",
+            issue_type="doc_incomplete",
+            severity="warning",
+            confidence=0.78,
+            declared="8544.42 (Electric conductors)",
+            expected="8544.42 (Electric conductors)",
+            source="Document Store",
+            detail="Packing list received but commercial invoice missing. Pre-arrival documentation incomplete. Arriving tomorrow from US.",
+            suggested_action="Request invoice from DB Schenker. Monitor ICS2 filing status. Prepare for potential customs query on arrival.",
+            duty_impact="3.3% duty — cannot calculate exact amount without invoice",
+        ),
+    ]

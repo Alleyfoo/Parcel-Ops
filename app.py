@@ -26,6 +26,7 @@ from parcel_schema import (
     OpsKPIs,
     compute_kpis,
     demo_data_freshness,
+    demo_diagnostics,
     demo_lane_statuses,
     demo_shipments,
     normalize_shipment_data,
@@ -248,6 +249,77 @@ def render_exceptions_first(
 
 
 # ---------------------------------------------------------------------------
+# Diagnostics panel
+# ---------------------------------------------------------------------------
+
+def render_diagnostics() -> None:
+    entries = demo_diagnostics()
+    if not entries:
+        return
+
+    crit_count = sum(1 for e in entries if e.severity == "critical")
+    high_count = sum(1 for e in entries if e.severity == "high")
+
+    _md(f"""
+    <div class="section">
+      <div class="section-head">
+        <div class="left"><h2>Diagnostics <span class="muted">— automated detection</span></h2></div>
+        <div class="right">{len(entries)} issues · {crit_count} critical · {high_count} high</div>
+      </div>
+    </div>
+    """)
+
+    for e in entries:
+        sev_cls = {"critical": "crit", "high": "warn", "warning": "warn"}.get(e.severity, "")
+        conf_pct = int(e.confidence * 100)
+        conf_cls = "high" if e.confidence >= 0.90 else ("mid" if e.confidence >= 0.75 else "low")
+        type_label = {
+            "hs_mismatch": "HS CODE MISMATCH",
+            "doc_missing": "DOCUMENT MISSING",
+            "ens_missing": "ENS NOT FILED",
+            "sla_breach": "SLA BREACH",
+            "doc_incomplete": "DOCS INCOMPLETE",
+        }.get(e.issue_type, e.issue_type.upper())
+
+        _md(f"""
+        <div class="diag-card {sev_cls}">
+          <div class="diag-header">
+            <div class="diag-id">
+              <span class="sku">{e.batch_id}</span>
+              <span class="diag-type">{type_label}</span>
+            </div>
+            <div class="diag-severity">{e.severity.upper()}</div>
+          </div>
+          <div class="diag-body">
+            <div class="diag-row">
+              <span class="diag-label">Declared</span>
+              <span class="diag-value">{e.declared}</span>
+            </div>
+            <div class="diag-row">
+              <span class="diag-label">Expected</span>
+              <span class="diag-value diag-expected">{e.expected}</span>
+            </div>
+            <div class="diag-row">
+              <span class="diag-label">Source</span>
+              <span class="diag-value">{e.source}</span>
+            </div>
+            <div class="diag-row">
+              <span class="diag-label">Confidence</span>
+              <span class="diag-value diag-conf {conf_cls}">{conf_pct}%</span>
+            </div>
+            <div class="diag-detail">{e.detail}</div>
+            <div class="diag-impact">
+              <span class="diag-label">Duty Impact:</span> {e.duty_impact}
+            </div>
+            <div class="diag-action">
+              <span class="diag-label">Action:</span> {e.suggested_action}
+            </div>
+          </div>
+        </div>
+        """)
+
+
+# ---------------------------------------------------------------------------
 # Lane matrix
 # ---------------------------------------------------------------------------
 
@@ -395,6 +467,7 @@ def main() -> None:
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
     render_exceptions_first(df, lane_statuses)
+    render_diagnostics()
     render_lane_matrix(df, lane_statuses)
     render_data_freshness()
     render_footer()
