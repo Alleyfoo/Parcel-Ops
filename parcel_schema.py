@@ -480,3 +480,164 @@ def demo_diagnostics() -> list[DiagnosticEntry]:
             duty_impact="3.3% duty — cannot calculate exact amount without invoice",
         ),
     ]
+
+
+# ---------------------------------------------------------------------------
+# HS Code tree — hierarchical classification structure
+# ---------------------------------------------------------------------------
+
+HS_TREE: dict = {
+    "code": "",
+    "label": "Harmonized System",
+    "duty": None,
+    "children": [
+        {
+            "code": "VII",
+            "label": "Section VII — Plastics and articles thereof; rubber and articles thereof",
+            "duty": None,
+            "children": [
+                {
+                    "code": "39",
+                    "label": "Chapter 39 — Plastics and articles thereof",
+                    "duty": None,
+                    "children": [
+                        {
+                            "code": "3926",
+                            "label": "Other articles of plastics and articles of other materials of headings 3901 to 3914",
+                            "duty": None,
+                            "children": [
+                                {
+                                    "code": "3926.10",
+                                    "label": "Office or school supplies",
+                                    "duty": "6.5%",
+                                    "children": [],
+                                },
+                                {
+                                    "code": "3926.20",
+                                    "label": "Articles of apparel and clothing accessories",
+                                    "duty": "6.5%",
+                                    "children": [],
+                                },
+                                {
+                                    "code": "3926.30",
+                                    "label": "Fittings for furniture, coachwork or the like",
+                                    "duty": "6.5%",
+                                    "children": [],
+                                },
+                                {
+                                    "code": "3926.40",
+                                    "label": "Statuettes and other ornamental articles",
+                                    "duty": "6.5%",
+                                    "children": [],
+                                },
+                                {
+                                    "code": "3926.90",
+                                    "label": "Other",
+                                    "duty": "6.5%",
+                                    "children": [],
+                                    "highlight": "declared",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            "code": "XVI",
+            "label": "Section XVI — Machinery and mechanical appliances; electrical equipment",
+            "duty": None,
+            "children": [
+                {
+                    "code": "84",
+                    "label": "Chapter 84 — Nuclear reactors, boilers, machinery and mechanical appliances",
+                    "duty": None,
+                    "children": [],
+                },
+                {
+                    "code": "85",
+                    "label": "Chapter 85 — Electrical machinery and equipment and parts thereof",
+                    "duty": None,
+                    "children": [
+                        {
+                            "code": "8517",
+                            "label": "Telephone sets; telephones for cellular networks",
+                            "duty": None,
+                            "children": [],
+                        },
+                        {
+                            "code": "8528",
+                            "label": "Monitors and projectors; reception apparatus for television",
+                            "duty": None,
+                            "children": [],
+                        },
+                        {
+                            "code": "8536",
+                            "label": "Electrical apparatus for switching or protecting electrical circuits",
+                            "duty": None,
+                            "children": [],
+                        },
+                        {
+                            "code": "8541",
+                            "label": "Diodes, transistors and similar semiconductor devices",
+                            "duty": None,
+                            "children": [],
+                        },
+                        {
+                            "code": "8542",
+                            "label": "Electronic integrated circuits",
+                            "duty": None,
+                            "highlight": "match",
+                            "children": [
+                                {
+                                    "code": "8542.31",
+                                    "label": "Processors and controllers, whether or not combined with memories",
+                                    "duty": "0%",
+                                    "children": [],
+                                    "highlight": "expected",
+                                },
+                                {
+                                    "code": "8542.32",
+                                    "label": "Memories",
+                                    "duty": "0%",
+                                    "children": [],
+                                },
+                                {
+                                    "code": "8542.33",
+                                    "label": "Amplifiers",
+                                    "duty": "0%",
+                                    "children": [],
+                                },
+                                {
+                                    "code": "8542.39",
+                                    "label": "Other",
+                                    "duty": "0%",
+                                    "children": [],
+                                },
+                            ],
+                        },
+                        {
+                            "code": "8544",
+                            "label": "Insulated wire, cable and other electric conductors",
+                            "duty": None,
+                            "children": [],
+                        },
+                    ],
+                },
+            ],
+        },
+    ],
+}
+
+
+def hs_tree_path(target_code: str) -> list[dict]:
+    """Return the path from root to a given HS code node."""
+    def _find(node: dict, path: list[dict]) -> list[dict] | None:
+        if node["code"] == target_code:
+            return path + [node]
+        for child in node.get("children", []):
+            result = _find(child, path + [node])
+            if result:
+                return result
+        return None
+    return _find(HS_TREE, []) or []

@@ -604,6 +604,127 @@ code, .mono {
   line-height: 1.6;
 }
 
+/* ============= HS CODE TREE BROWSER ============= */
+.hs-tree-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.hs-tree-card.wrong { border-top: 3px solid var(--red); }
+.hs-tree-card.correct { border-top: 3px solid var(--green); }
+.hs-tree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+}
+.hs-tree-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.hs-tree-card.wrong .hs-tree-title { color: var(--red); }
+.hs-tree-card.correct .hs-tree-title { color: var(--green); }
+.hs-tree-code {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.hs-tree-body {
+  padding: 16px;
+}
+.hs-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  transition: background .15s;
+}
+.hs-tree-node.level-0 { margin-left: 0; }
+.hs-tree-node.level-1 { margin-left: 20px; }
+.hs-tree-node.level-2 { margin-left: 40px; }
+.hs-tree-node.level-3 { margin-left: 60px; }
+.hs-tree-node.active-wrong {
+  background: var(--red-tint);
+  border: 1px solid var(--red-soft);
+}
+.hs-tree-node.active-correct {
+  background: var(--green-tint);
+  border: 1px solid var(--green-soft);
+}
+.hs-tree-code-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--teal-deep);
+  background: var(--teal-tint);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  min-width: 50px;
+  text-align: center;
+}
+.hs-tree-node.active-wrong .hs-tree-code-tag {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.hs-tree-node.active-correct .hs-tree-code-tag {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.hs-tree-label {
+  font-size: 12px;
+  color: var(--ink-2);
+  flex: 1;
+}
+.hs-tree-duty {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+}
+.hs-tree-node.active-wrong .hs-tree-duty {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.hs-tree-node.active-correct .hs-tree-duty {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.hs-tree-connector {
+  width: 1px;
+  height: 12px;
+  background: var(--line-2);
+  margin-left: 30px;
+}
+.hs-tree-node.level-1 + .hs-tree-connector { margin-left: 50px; }
+.hs-tree-node.level-2 + .hs-tree-connector { margin-left: 70px; }
+.hs-tree-verdict {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.hs-tree-verdict.wrong {
+  background: var(--red-tint);
+  border-left: 3px solid var(--red);
+  color: var(--ink-2);
+}
+.hs-tree-verdict.correct {
+  background: var(--green-tint);
+  border-left: 3px solid var(--green);
+  color: var(--ink-2);
+}
+
 /* ============= FOOTER ============= */
 .footer {
   margin-top: 56px;

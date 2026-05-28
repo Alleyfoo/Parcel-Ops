@@ -29,6 +29,8 @@ from parcel_schema import (
     demo_diagnostics,
     demo_lane_statuses,
     demo_shipments,
+    HS_TREE,
+    hs_tree_path,
     normalize_shipment_data,
     shipment_template,
 )
@@ -692,51 +694,141 @@ def check_hs_mismatch(invoice_data, hs_db):
 
     _md("""
     <div class="pipeline-details">
-      <div class="pipeline-details-title">Technical Implementation Details</div>
+      <div class="pipeline-details-title">HS Code Tree Classification</div>
+      <div class="pipeline-detail-text" style="margin-bottom:16px;">
+        The tree-based approach: start with the 2-digit chapter (family), then narrow by heading (material/function),
+        then subheading (specific type). This is how customs officers classify goods — and how the comparison engine
+        walks the tree to find the correct code.
+      </div>
+    </div>
+    """)
+
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    col_declared, col_expected = st.columns([1, 1])
+
+    with col_declared:
+        _md("""
+        <div class="hs-tree-card wrong">
+          <div class="hs-tree-header">
+            <span class="hs-tree-title">Declared Path (WRONG)</span>
+            <span class="hs-tree-code">3926.90</span>
+          </div>
+          <div class="hs-tree-body">
+            <div class="hs-tree-node level-0">
+              <span class="hs-tree-code-tag">VII</span>
+              <span class="hs-tree-label">Plastics and articles thereof; rubber</span>
+            </div>
+            <div class="hs-tree-connector"></div>
+            <div class="hs-tree-node level-1">
+              <span class="hs-tree-code-tag">39</span>
+              <span class="hs-tree-label">Plastics and articles thereof</span>
+            </div>
+            <div class="hs-tree-connector"></div>
+            <div class="hs-tree-node level-2">
+              <span class="hs-tree-code-tag">3926</span>
+              <span class="hs-tree-label">Other articles of plastics</span>
+            </div>
+            <div class="hs-tree-connector"></div>
+            <div class="hs-tree-node level-3 active-wrong">
+              <span class="hs-tree-code-tag">3926.90</span>
+              <span class="hs-tree-label">Other</span>
+              <span class="hs-tree-duty">6.5%</span>
+            </div>
+            <div class="hs-tree-verdict wrong">
+              Invoice says "electronic voltage regulators, integrated circuits" —
+              this branch is for plastic articles. Wrong chapter entirely.
+            </div>
+          </div>
+        </div>
+        """)
+
+    with col_expected:
+        _md("""
+        <div class="hs-tree-card correct">
+          <div class="hs-tree-header">
+            <span class="hs-tree-title">Expected Path (CORRECT)</span>
+            <span class="hs-tree-code">8542.31</span>
+          </div>
+          <div class="hs-tree-body">
+            <div class="hs-tree-node level-0">
+              <span class="hs-tree-code-tag">XVI</span>
+              <span class="hs-tree-label">Machinery; electrical equipment</span>
+            </div>
+            <div class="hs-tree-connector"></div>
+            <div class="hs-tree-node level-1">
+              <span class="hs-tree-code-tag">85</span>
+              <span class="hs-tree-label">Electrical machinery and equipment</span>
+            </div>
+            <div class="hs-tree-connector"></div>
+            <div class="hs-tree-node level-2">
+              <span class="hs-tree-code-tag">8542</span>
+              <span class="hs-tree-label">Electronic integrated circuits</span>
+            </div>
+            <div class="hs-tree-connector"></div>
+            <div class="hs-tree-node level-3 active-correct">
+              <span class="hs-tree-code-tag">8542.31</span>
+              <span class="hs-tree-label">Processors and controllers</span>
+              <span class="hs-tree-duty">0%</span>
+            </div>
+            <div class="hs-tree-verdict correct">
+              Keywords "electronic", "integrated circuits", "voltage regulators"
+              all point to this branch. 6.5% duty difference flagged.
+            </div>
+          </div>
+        </div>
+        """)
+
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-details">
+      <div class="pipeline-details-title">How Tree-Based Classification Works</div>
       
       <div class="pipeline-detail-section">
-        <div class="pipeline-detail-label">Data Ingestion</div>
+        <div class="pipeline-detail-label">Step 1 — Chapter (2 digits)</div>
         <div class="pipeline-detail-text">
-          Invoices arrive via SFTP from 6 carriers (DHL, DSV, PostNord, Schenker, Maersk, Kuehne+Nagel). 
-          Each carrier uses different Excel templates. Python script normalizes to common schema using 
-          pandas with carrier-specific parsers. OCR fallback for PDF invoices via ABBYY FlexiCapture API.
+          The first two digits define the chapter (broad family of goods). Chapter 85 = electrical machinery.
+          Chapter 39 = plastics. The comparison engine extracts keywords from the invoice and scores each chapter
+          by keyword density. "Electronic", "integrated circuits", "voltage" all score high on Chapter 85,
+          zero on Chapter 39.
         </div>
       </div>
       
       <div class="pipeline-detail-section">
-        <div class="pipeline-detail-label">HS Code Matching</div>
+        <div class="pipeline-detail-label">Step 2 — Heading (4 digits)</div>
         <div class="pipeline-detail-text">
-          TF-IDF vectorization of invoice descriptions compared against TARIC database descriptions. 
-          Cosine similarity threshold: 0.75. Below threshold triggers manual review. 
-          Historical data used to train carrier-specific accuracy models (some carriers have higher error rates).
+          Within the winning chapter, the engine walks the heading level. Chapter 85 has headings for
+          telephones (8517), monitors (8528), semiconductors (8541), integrated circuits (8542), and
+          conductors (8544). "Integrated circuits" matches heading 8542 directly.
         </div>
       </div>
       
       <div class="pipeline-detail-section">
-        <div class="pipeline-detail-label">Confidence Scoring</div>
+        <div class="pipeline-detail-label">Step 3 — Subheading (6 digits)</div>
         <div class="pipeline-detail-text">
-          Confidence = (1 - semantic_similarity) × keyword_match_score × carrier_accuracy_factor. 
-          Scores above 90% auto-flag as critical. Scores 75-90% flagged as high priority. 
-          Below 75% logged but not surfaced unless pattern detected across multiple batches.
+          Within heading 8542, subheadings split by function: processors (8542.31), memories (8542.32),
+          amplifiers (8542.33), other (8542.39). "Voltage regulators" and "control board" suggest
+          processors/controllers → 8542.31.
         </div>
       </div>
       
       <div class="pipeline-detail-section">
-        <div class="pipeline-detail-label">Error Handling</div>
+        <div class="pipeline-detail-label">Step 4 — TARIC extension (8-10 digits)</div>
         <div class="pipeline-detail-text">
-          Missing invoices: 4-hour grace period before flagging. OCR failures: retry 3x with different preprocessing. 
-          HS database sync failures: use cached version (max 24h old). 
-          All errors logged to diagnostic_events table with full stack trace for debugging.
+          EU-specific TARIC codes extend beyond the 6-digit international standard. These add
+          surveillance measures, anti-dumping duties, and preferential rates. The engine checks
+          TARIC extensions for additional restrictions (dual-use export controls, sanctions, etc.).
         </div>
       </div>
       
       <div class="pipeline-detail-section">
-        <div class="pipeline-detail-label">Performance</div>
+        <div class="pipeline-detail-label">Why the Tree Approach Matters</div>
         <div class="pipeline-detail-text">
-          Average processing time: 2.3 seconds per batch. 
-          HS database query: 180ms (indexed on keywords). 
-          Full pipeline cycle: 15 minutes. 
-          Handles 200+ batches per day with current infrastructure.
+          Flat keyword search can miss context — "plastic" appears in electronics packaging descriptions too.
+          The tree approach forces hierarchical reasoning: first eliminate wrong chapters, then narrow within
+          the correct family. This mirrors how customs officers actually classify goods and catches errors
+          that flat search misses (like declaring electronics under the plastics chapter).
         </div>
       </div>
     </div>
