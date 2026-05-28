@@ -1,0 +1,47 @@
+unit_id: dashboard
+domain: parcel-ops
+layer: presentation
+owner: ops-team
+stability: evolving
+maturity: prototype
+
+summary: >
+  Streamlit dashboard for the Parcel Ops Control Tower. Renders the lane matrix
+  (8 lanes), KPI strip (6 cards), exceptions-first section, and data freshness
+  grid. All domain logic is imported from parcel_schema.py; app.py is display only.
+
+entrypoints:
+  - path: app.py
+    symbol: main
+  - path: app.py
+    symbol: render_lane_matrix
+  - path: app.py
+    symbol: render_kpi_strip
+  - path: app.py
+    symbol: render_exceptions_first
+  - path: app.py
+    symbol: render_data_freshness
+
+primary_files:
+  - app.py
+  - parcel_schema.py
+
+supporting_files:
+  - design/design.css
+
+tests: []
+
+validation_commands:
+  - "streamlit run app.py --server.headless true"
+  - "python -c \"from parcel_schema import LANES; assert len(LANES) == 8\""
+
+risk_tags:
+  - synthetic-data
+  - no-auth
+  - single-page
+
+doc_refs:
+  - docs/manager/workspace/plan.md
+  - README.md
+
+dependencies: []

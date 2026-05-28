@@ -33,7 +33,7 @@ Plan/Truth/Gap structure. No live data connections yet.
 
 ### Handout 001 — Bootstrap and smoke test
 
-Status: pending
+Status: done
 
 - Verify the app runs: `streamlit run app.py`
 - Confirm all 8 lanes render in the lane matrix

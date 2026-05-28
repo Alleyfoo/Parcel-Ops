@@ -5,8 +5,9 @@
     {
       "id": "001",
       "title": "Bootstrap and smoke test",
-      "status": "pending",
-      "created": "2026-05-28"
+      "status": "done",
+      "created": "2026-05-28",
+      "completed": "2026-05-28"
     }
   ]
 }
