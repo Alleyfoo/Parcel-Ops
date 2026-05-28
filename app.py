@@ -1405,7 +1405,7 @@ def main() -> None:
 
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
-    tab_dashboard, tab_pipeline, tab_api = st.tabs(["Dashboard", "Data Pipeline", "API"])
+    tab_dashboard, tab_pipeline, tab_api, tab_docs = st.tabs(["Dashboard", "Data Pipeline", "API", "Documents"])
 
     with tab_dashboard:
         df, lane_statuses = render_data_input()
@@ -1429,6 +1429,9 @@ def main() -> None:
 
     with tab_api:
         render_api_showcase()
+
+    with tab_docs:
+        render_documents_showcase()
 
 
 def render_api_showcase() -> None:
@@ -1733,6 +1736,221 @@ response = requests.post(
 )
 print(response.json())
 """, language="python")
+
+
+def render_documents_showcase() -> None:
+    """Render PDF document generation showcase."""
+    from pdf_generator import generate_amendment_letter, generate_carrier_notification, generate_escalation_report
+    
+    st.markdown("## Document Generator")
+    st.markdown("Automated PDF generation for customs operations workflows.")
+    
+    st.markdown("### Use Cases")
+    st.markdown("- **Amendment Letters**: Formal requests to customs authorities for declaration changes")
+    st.markdown("- **Carrier Notifications**: Issue alerts and action requests to carriers")
+    st.markdown("- **Escalation Reports**: Internal reports for operations management")
+    
+    st.markdown("---")
+    
+    # Amendment Letter
+    st.markdown("### Amendment Request Letter")
+    st.markdown("Formal letter to customs authorities requesting declaration amendment.")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("**Example: HS Code Correction**")
+        st.markdown("- **Batch**: FI-2026-001")
+        st.markdown("- **Field**: HS Code")
+        st.markdown("- **Current**: 3926.90 (Plastic articles)")
+        st.markdown("- **Proposed**: 8542.31 (Electronic integrated circuits)")
+        st.markdown("- **Reason**: Invoice describes electronic components, not plastic articles")
+    
+    with col2:
+        if st.button("Generate Amendment Letter", key="gen_amendment"):
+            pdf_buffer = generate_amendment_letter(
+                batch_id="FI-2026-001",
+                field="HS Code",
+                old_value="3926.90 (Plastic articles)",
+                new_value="8542.31 (Electronic integrated circuits)",
+                reason="Commercial invoice describes electronic voltage regulators and integrated circuits. HS code 3926.90 is for plastic articles. Correct classification is 8542.31 based on product description and TARIC database lookup.",
+                carrier="DHL Express",
+                origin="CN",
+                parcel_count=450,
+                hs_code="3926.90",
+            )
+            st.download_button(
+                label="Download PDF",
+                data=pdf_buffer,
+                file_name="amendment_FI-2026-001.pdf",
+                mime="application/pdf",
+            )
+    
+    st.markdown("---")
+    
+    # Carrier Notification
+    st.markdown("### Carrier Notification")
+    st.markdown("Notification letter to carrier regarding shipment issues.")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("**Example: Missing Documents Alert**")
+        st.markdown("- **Batch**: FI-2026-004")
+        st.markdown("- **Carrier**: Kuehne+Nagel")
+        st.markdown("- **Issue**: Missing commercial invoice")
+        st.markdown("- **Severity**: High")
+        st.markdown("- **Deadline**: 48 hours")
+    
+    with col2:
+        if st.button("Generate Carrier Notification", key="gen_carrier"):
+            pdf_buffer = generate_carrier_notification(
+                batch_id="FI-2026-004",
+                carrier="Kuehne+Nagel",
+                issue_type="missing_documents",
+                severity="high",
+                detail="Commercial invoice is missing from shipment documentation. This document is required for customs clearance and duty assessment. Without it, the shipment cannot proceed through H7 clearance.",
+                required_action="Please provide the commercial invoice including: shipper details, consignee information, complete product descriptions, HS codes, unit values, and total shipment value. Submit via document portal or email to docs@parcel-ops.example.com.",
+                deadline="2026-05-30 17:00",
+                contact_email="ops@parcel-ops.example.com",
+            )
+            st.download_button(
+                label="Download PDF",
+                data=pdf_buffer,
+                file_name="notification_FI-2026-004.pdf",
+                mime="application/pdf",
+            )
+    
+    st.markdown("---")
+    
+    # Escalation Report
+    st.markdown("### Internal Escalation Report")
+    st.markdown("Internal report for operations management review.")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("**Example: Critical Batch Escalation**")
+        st.markdown("- **Batch**: FI-2026-007")
+        st.markdown("- **Carrier**: DHL Express")
+        st.markdown("- **Critical Lanes**: H7, Stopped")
+        st.markdown("- **Diagnostics**: HS code mismatch (92% confidence)")
+        st.markdown("- **Assigned To**: Operations Manager")
+    
+    with col2:
+        if st.button("Generate Escalation Report", key="gen_escalation"):
+            pdf_buffer = generate_escalation_report(
+                batch_id="FI-2026-007",
+                carrier="DHL Express",
+                origin="CN",
+                parcel_count=150,
+                hs_code="3926.90",
+                critical_lanes=["H7", "Stopped"],
+                diagnostics=[
+                    {
+                        "issue_type": "hs_mismatch",
+                        "severity": "critical",
+                        "confidence": 0.92,
+                        "detail": "Invoice describes electronic components but HS code is for plastic articles. Potential duty evasion or misclassification.",
+                        "suggested_action": "Contact shipper immediately for clarification. Request amended invoice with correct HS code 8542.31.",
+                    }
+                ],
+                escalation_reason="Batch has critical lane statuses (H7 and Stopped) with high-confidence HS code mismatch diagnostic. Requires immediate management review to determine if customs hold is justified or if amendment request should be submitted. Risk of shipment delay and potential penalties if not resolved within 72 hours.",
+                assigned_to="Operations Manager",
+            )
+            st.download_button(
+                label="Download PDF",
+                data=pdf_buffer,
+                file_name="escalation_FI-2026-007.pdf",
+                mime="application/pdf",
+            )
+    
+    st.markdown("---")
+    
+    # Technical details
+    st.markdown("### Technical Implementation")
+    
+    with st.expander("PDF Generation Architecture", expanded=False):
+        st.markdown("**Library**: ReportLab (Python PDF generation)")
+        st.markdown("**Page Format**: A4 (210mm × 297mm)")
+        st.markdown("**Margins**: 2cm all sides")
+        st.markdown("**Fonts**: Helvetica (standard PDF fonts, no embedding required)")
+        
+        st.markdown("**Document Structure**:")
+        st.markdown("- Header with title and metadata")
+        st.markdown("- Tabular data for batch information")
+        st.markdown("- Structured sections with headings")
+        st.markdown("- Signature blocks for formal documents")
+        st.markdown("- Footer with generation timestamp")
+        
+        st.markdown("**Styling**:")
+        st.markdown("- Custom paragraph styles for consistent formatting")
+        st.markdown("- Color-coded severity indicators")
+        st.markdown("- Professional business document layout")
+        st.markdown("- Responsive table layouts")
+    
+    with st.expander("Integration Points", expanded=False):
+        st.markdown("**API Integration**:")
+        st.code("""# Generate amendment letter from API response
+response = requests.get("http://localhost:8000/api/batch/FI-2026-001/diagnostics")
+diagnostics = response.json()
+
+if diagnostics:
+    diag = diagnostics[0]
+    pdf = generate_amendment_letter(
+        batch_id=diag['batch_id'],
+        field="HS Code",
+        old_value=diag['declared'],
+        new_value=diag['expected'],
+        reason=diag['detail'],
+        carrier="DHL Express",
+        origin="CN",
+        parcel_count=450,
+        hs_code=diag['declared'],
+    )
+    
+    # Save or email PDF
+    with open(f"amendment_{diag['batch_id']}.pdf", "wb") as f:
+        f.write(pdf.read())
+""", language="python")
+        
+        st.markdown("**Workflow Automation**:")
+        st.markdown("1. Diagnostic detected → Generate amendment letter")
+        st.markdown("2. Carrier issue identified → Generate notification")
+        st.markdown("3. Critical escalation triggered → Generate report")
+        st.markdown("4. Documents attached to batch record in system")
+        st.markdown("5. Email notifications sent to relevant parties")
+    
+    st.markdown("---")
+    
+    st.markdown("### Document Templates")
+    st.markdown("All documents use standardized templates for consistency:")
+    
+    st.markdown("**Amendment Letter Template**:")
+    st.markdown("- Formal business letter format")
+    st.markdown("- Customs authority address block")
+    st.markdown("- Batch reference and shipment details")
+    st.markdown("- Amendment details (field, old value, new value)")
+    st.markdown("- Reason and justification")
+    st.markdown("- Declaration of accuracy")
+    st.markdown("- Signature block")
+    
+    st.markdown("**Carrier Notification Template**:")
+    st.markdown("- Priority header with severity color")
+    st.markdown("- Shipment identification")
+    st.markdown("- Issue description and impact")
+    st.markdown("- Required action with deadline")
+    st.markdown("- Contact information")
+    st.markdown("- Acknowledgment request")
+    
+    st.markdown("**Escalation Report Template**:")
+    st.markdown("- Internal report header")
+    st.markdown("- Batch summary with all details")
+    st.markdown("- Critical lanes list")
+    st.markdown("- Diagnostics with confidence scores")
+    st.markdown("- Escalation reason and context")
+    st.markdown("- Recommended action items")
+    st.markdown("- Assignment to operations manager")
 
 
 if __name__ == "__main__":
