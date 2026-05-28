@@ -451,6 +451,299 @@ def render_data_input() -> tuple[pd.DataFrame, dict]:
 
 
 # ---------------------------------------------------------------------------
+# Data Pipeline Showcase
+# ---------------------------------------------------------------------------
+
+def render_pipeline_showcase() -> None:
+    """Technical showcase of diagnostic data pipeline architecture."""
+
+    _md("""
+    <div class="section">
+      <div class="section-head">
+        <div class="left"><h2>Data Pipeline <span class="muted">— diagnostic detection architecture</span></h2></div>
+        <div class="right">FI-2026-007 case study</div>
+      </div>
+    </div>
+    """)
+
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        _md("""
+        <div class="pipeline-card">
+          <div class="pipeline-header">
+            <div class="pipeline-num">01</div>
+            <div class="pipeline-title">Source: Commercial Invoice (Excel)</div>
+          </div>
+          <div class="pipeline-body">
+            <div class="pipeline-meta">
+              <span class="pipeline-label">System:</span> Shipper ERP Export
+            </div>
+            <div class="pipeline-meta">
+              <span class="pipeline-label">Format:</span> .xlsx via SFTP
+            </div>
+            <div class="pipeline-meta">
+              <span class="pipeline-label">Frequency:</span> On shipment creation
+            </div>
+            <div class="pipeline-code">
+Batch ID: FI-2026-007
+Shipper: Shenzhen Electronics Ltd
+Invoice #: INV-2026-04-1847
+Date: 2026-05-26
+
+Line Items:
+  Qty: 2400  |  SKU: IC-7805-REG  |  Desc: "Electronic voltage regulators, integrated circuits"
+  Qty: 1200  |  SKU: PCB-CTRL-V3  |  Desc: "Control board assembly with ICs"
+  Qty: 800   |  SKU: CAP-100UF    |  Desc: "Capacitors, electronic components"
+
+Declared HS Code: 3926.90
+Declared Description: "Plastic articles"
+Declared Value: USD 57,400
+            </div>
+            <div class="pipeline-issue">
+              <span class="pipeline-label">Issue:</span> Invoice describes electronic components but HS code 3926.90 is for plastic articles
+            </div>
+          </div>
+        </div>
+        """)
+
+    with col2:
+        _md("""
+        <div class="pipeline-card">
+          <div class="pipeline-header">
+            <div class="pipeline-num">02</div>
+            <div class="pipeline-title">Source: Document Scanner (OCR)</div>
+          </div>
+          <div class="pipeline-body">
+            <div class="pipeline-meta">
+              <span class="pipeline-label">System:</span> ABBYY FlexiCapture
+            </div>
+            <div class="pipeline-meta">
+              <span class="pipeline-label">Format:</span> PDF scan → JSON
+            </div>
+            <div class="pipeline-meta">
+              <span class="pipeline-label">Confidence:</span> 94% OCR accuracy
+            </div>
+            <div class="pipeline-code">
+{
+  "invoice_number": "INV-2026-04-1847",
+  "shipper": "Shenzhen Electronics Ltd",
+  "line_items": [
+    {
+      "quantity": 2400,
+      "description": "Electronic voltage regulators, integrated circuits",
+      "keywords_extracted": ["electronic", "voltage", "regulators", "integrated", "circuits"]
+    },
+    {
+      "quantity": 1200,
+      "description": "Control board assembly with ICs",
+      "keywords_extracted": ["control", "board", "assembly", "ICs"]
+    }
+  ],
+  "declared_hs": "3926.90",
+  "declared_value": 57400.00,
+  "ocr_confidence": 0.94
+}
+            </div>
+            <div class="pipeline-note">
+              <span class="pipeline-label">Note:</span> OCR extracted keywords suggest electronics, not plastics
+            </div>
+          </div>
+        </div>
+        """)
+
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    col3, col4 = st.columns([1, 1])
+
+    with col3:
+        _md("""
+        <div class="pipeline-card">
+          <div class="pipeline-header">
+            <div class="pipeline-num">03</div>
+            <div class="pipeline-title">Source: HS Code Database (TARIC)</div>
+          </div>
+          <div class="pipeline-body">
+            <div class="pipeline-meta">
+              <span class="pipeline-label">System:</span> EU TARIC API
+            </div>
+            <div class="pipeline-meta">
+              <span class="pipeline-label">Format:</span> REST JSON
+            </div>
+            <div class="pipeline-meta">
+              <span class="pipeline-label">Update:</span> Daily sync
+            </div>
+            <div class="pipeline-code">
+HS Code: 3926.90
+Description: "Articles of plastics and articles of other materials of headings 3901 to 3914"
+Duty Rate: 6.5%
+Restrictions: None
+
+HS Code: 8542.31
+Description: "Electronic integrated circuits: Processors and controllers"
+Duty Rate: 0%
+Restrictions: Dual-use export control (low risk)
+
+HS Code: 8542.39
+Description: "Electronic integrated circuits: Other"
+Duty Rate: 0%
+Restrictions: None
+            </div>
+            <div class="pipeline-match">
+              <span class="pipeline-label">Best Match:</span> 8542.31 or 8542.39 based on "integrated circuits" keywords
+            </div>
+          </div>
+        </div>
+        """)
+
+    with col4:
+        _md("""
+        <div class="pipeline-card">
+          <div class="pipeline-header">
+            <div class="pipeline-num">04</div>
+            <div class="pipeline-title">Comparison Engine (Python)</div>
+          </div>
+          <div class="pipeline-body">
+            <div class="pipeline-meta">
+              <span class="pipeline-label">System:</span> Custom Python service
+            </div>
+            <div class="pipeline-meta">
+              <span class="pipeline-label">Framework:</span> pandas + scikit-learn
+            </div>
+            <div class="pipeline-meta">
+              <span class="pipeline-label">Schedule:</span> Every 15 min
+            </div>
+            <div class="pipeline-code">
+def check_hs_mismatch(invoice_data, hs_db):
+    declared_hs = invoice_data['declared_hs']
+    keywords = invoice_data['keywords_extracted']
+    
+    # Query HS database for keyword matches
+    candidates = hs_db.search(keywords, limit=5)
+    
+    # Calculate semantic similarity
+    declared_desc = hs_db.get(declared_hs).description
+    invoice_desc = invoice_data['line_items'][0]['description']
+    
+    similarity = cosine_similarity(declared_desc, invoice_desc)
+    
+    # Flag if best match differs from declared
+    best_match = candidates[0]
+    if best_match.hs_code != declared_hs:
+        confidence = 1.0 - similarity
+        return Mismatch(
+            declared=declared_hs,
+            expected=best_match.hs_code,
+            confidence=confidence
+        )
+            </div>
+            <div class="pipeline-result">
+              <span class="pipeline-label">Result:</span> Mismatch detected, confidence 92%
+            </div>
+          </div>
+        </div>
+        """)
+
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-flow">
+      <div class="pipeline-flow-title">Data Flow Architecture</div>
+      <div class="pipeline-flow-diagram">
+        <div class="flow-step">
+          <div class="flow-box">Shipper ERP</div>
+          <div class="flow-arrow">→</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">SFTP Drop</div>
+          <div class="flow-arrow">→</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">OCR Scanner</div>
+          <div class="flow-arrow">→</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">JSON Parser</div>
+          <div class="flow-arrow">→</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box highlight">Comparison Engine</div>
+          <div class="flow-arrow">→</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">Diagnostic DB</div>
+          <div class="flow-arrow">→</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">Dashboard</div>
+        </div>
+      </div>
+      <div class="pipeline-flow-note">
+        Pipeline runs every 15 minutes. Each batch is checked against HS code database, 
+        historical patterns, and carrier accuracy scores. Mismatches are scored by confidence 
+        and routed to the appropriate ops team based on severity.
+      </div>
+    </div>
+    """)
+
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-details">
+      <div class="pipeline-details-title">Technical Implementation Details</div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">Data Ingestion</div>
+        <div class="pipeline-detail-text">
+          Invoices arrive via SFTP from 6 carriers (DHL, DSV, PostNord, Schenker, Maersk, Kuehne+Nagel). 
+          Each carrier uses different Excel templates. Python script normalizes to common schema using 
+          pandas with carrier-specific parsers. OCR fallback for PDF invoices via ABBYY FlexiCapture API.
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">HS Code Matching</div>
+        <div class="pipeline-detail-text">
+          TF-IDF vectorization of invoice descriptions compared against TARIC database descriptions. 
+          Cosine similarity threshold: 0.75. Below threshold triggers manual review. 
+          Historical data used to train carrier-specific accuracy models (some carriers have higher error rates).
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">Confidence Scoring</div>
+        <div class="pipeline-detail-text">
+          Confidence = (1 - semantic_similarity) × keyword_match_score × carrier_accuracy_factor. 
+          Scores above 90% auto-flag as critical. Scores 75-90% flagged as high priority. 
+          Below 75% logged but not surfaced unless pattern detected across multiple batches.
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">Error Handling</div>
+        <div class="pipeline-detail-text">
+          Missing invoices: 4-hour grace period before flagging. OCR failures: retry 3x with different preprocessing. 
+          HS database sync failures: use cached version (max 24h old). 
+          All errors logged to diagnostic_events table with full stack trace for debugging.
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">Performance</div>
+        <div class="pipeline-detail-text">
+          Average processing time: 2.3 seconds per batch. 
+          HS database query: 180ms (indexed on keywords). 
+          Full pipeline cycle: 15 minutes. 
+          Handles 200+ batches per day with current infrastructure.
+        </div>
+      </div>
+    </div>
+    """)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -459,18 +752,24 @@ def main() -> None:
 
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
-    df, lane_statuses = render_data_input()
+    tab_dashboard, tab_pipeline = st.tabs(["Dashboard", "Data Pipeline"])
 
-    kpis = compute_kpis(df, lane_statuses, today=TODAY)
-    render_kpi_strip(kpis)
+    with tab_dashboard:
+        df, lane_statuses = render_data_input()
 
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        kpis = compute_kpis(df, lane_statuses, today=TODAY)
+        render_kpi_strip(kpis)
 
-    render_exceptions_first(df, lane_statuses)
-    render_diagnostics()
-    render_lane_matrix(df, lane_statuses)
-    render_data_freshness()
-    render_footer()
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+        render_exceptions_first(df, lane_statuses)
+        render_diagnostics()
+        render_lane_matrix(df, lane_statuses)
+        render_data_freshness()
+        render_footer()
+
+    with tab_pipeline:
+        render_pipeline_showcase()
 
 
 if __name__ == "__main__":

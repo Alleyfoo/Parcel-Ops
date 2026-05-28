@@ -413,6 +413,197 @@ code, .mono {
 }
 .diag-action .diag-label { margin-right: 6px; }
 
+/* ============= DATA PIPELINE SHOWCASE ============= */
+.pipeline-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.pipeline-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+}
+.pipeline-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--teal);
+  padding: 4px 8px;
+  background: var(--teal-tint);
+  border-radius: var(--r-sm);
+}
+.pipeline-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.pipeline-body {
+  padding: 14px 16px;
+}
+.pipeline-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+.pipeline-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-4);
+  font-weight: 500;
+}
+.pipeline-code {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  white-space: pre;
+  overflow-x: auto;
+}
+.pipeline-issue {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--red-tint);
+  border-left: 3px solid var(--red);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.pipeline-note {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--blue-tint);
+  border-left: 3px solid var(--blue);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.pipeline-match {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--green-tint);
+  border-left: 3px solid var(--green);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.pipeline-result {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--amber-tint);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.pipeline-flow {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.pipeline-flow-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.pipeline-flow-diagram {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0;
+  overflow-x: auto;
+}
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.flow-box {
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.flow-box.highlight {
+  background: var(--teal-tint);
+  border-color: var(--teal);
+  color: var(--teal-deep);
+  font-weight: 600;
+}
+.flow-arrow {
+  font-size: 18px;
+  color: var(--ink-4);
+}
+.pipeline-flow-note {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+.pipeline-details {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.pipeline-details-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.pipeline-detail-section {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.pipeline-detail-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.pipeline-detail-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ink-4);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.pipeline-detail-text {
+  font-size: 12px;
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+
 /* ============= FOOTER ============= */
 .footer {
   margin-top: 56px;
