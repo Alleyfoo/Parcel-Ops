@@ -1,0 +1,36 @@
+# Installation Instructions
+
+## Quick Start (Windows)
+
+```
+install.bat
+```
+
+## Quick Start (Linux/Mac)
+
+```
+bash install.sh
+```
+
+## Manual Steps
+
+1. Create virtual environment:
+   ```
+   python -m venv venv
+   ```
+
+2. Activate virtual environment:
+   - Windows: `venv\Scripts\activate`
+   - Linux/Mac: `source venv/bin/activate`
+
+3. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+4. Run the dashboard:
+   ```
+   streamlit run app.py
+   ```
+
+5. Open http://localhost:8501
