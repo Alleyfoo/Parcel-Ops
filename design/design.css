@@ -725,6 +725,78 @@ code, .mono {
   color: var(--ink-2);
 }
 
+/* ============= DATA CLEANING SECTION ============= */
+.clean-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  height: 100%;
+}
+.clean-card.raw {
+  border-top: 3px solid var(--amber);
+}
+.clean-card.clean {
+  border-top: 3px solid var(--green);
+}
+.clean-header {
+  background: var(--surface-2);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.clean-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+}
+.clean-body {
+  padding: 16px;
+}
+.clean-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.clean-row:last-child {
+  border-bottom: none;
+}
+.clean-carrier {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-4);
+  min-width: 120px;
+}
+.clean-value {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  background: var(--bg);
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  flex: 1;
+}
+.clean-code {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green);
+  background: var(--green-tint);
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  min-width: 40px;
+  text-align: center;
+}
+.clean-name {
+  font-size: 12px;
+  color: var(--ink-3);
+  flex: 1;
+}
+
 /* ============= PRE-CLASSIFICATION SCENARIOS ============= */
 .scenario-card {
   background: var(--surface);

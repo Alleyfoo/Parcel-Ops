@@ -690,6 +690,192 @@ def check_hs_mismatch(invoice_data, hs_db):
     </div>
     """)
 
+    st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="section">
+      <div class="section-head">
+        <div class="left"><h2>Data Cleaning <span class="muted">— normalizing messy input</span></h2></div>
+        <div class="right">Country of origin case study</div>
+      </div>
+    </div>
+    """)
+
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-detail-text" style="margin-bottom:20px;">
+      Before classification can begin, raw data must be cleaned. Country of origin is a critical field — it determines
+      preferential duty rates, trade agreements, and sanctions checks. But carriers submit origin in dozens of formats:
+      full names, abbreviations, city+country strings, even typos. Regex-based normalization maps all variants to ISO 2-letter codes.
+    </div>
+    """)
+
+    col_raw, col_clean = st.columns([1, 1])
+
+    with col_raw:
+        _md("""
+        <div class="clean-card raw">
+          <div class="clean-header">
+            <span class="clean-title">Raw Input (from carriers)</span>
+          </div>
+          <div class="clean-body">
+            <div class="clean-row">
+              <span class="clean-carrier">DHL Express</span>
+              <span class="clean-value">"People's Republic of China"</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">DSV Air & Sea</span>
+              <span class="clean-value">"CN"</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">Kuehne+Nagel</span>
+              <span class="clean-value">"Shenzhen, China"</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">DB Schenker</span>
+              <span class="clean-value">"CHN"</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">PostNord</span>
+              <span class="clean-value">"china"</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">Maersk</span>
+              <span class="clean-value">"P.R. China"</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">DHL Express</span>
+              <span class="clean-value">"Turkey (TR)"</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">DSV Air & Sea</span>
+              <span class="clean-value">"Turkiye"</span>
+            </div>
+          </div>
+        </div>
+        """)
+
+    with col_clean:
+        _md("""
+        <div class="clean-card clean">
+          <div class="clean-header">
+            <span class="clean-title">Normalized Output (ISO 3166-1 alpha-2)</span>
+          </div>
+          <div class="clean-body">
+            <div class="clean-row">
+              <span class="clean-carrier">DHL Express</span>
+              <span class="clean-code">CN</span>
+              <span class="clean-name">China</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">DSV Air & Sea</span>
+              <span class="clean-code">CN</span>
+              <span class="clean-name">China</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">Kuehne+Nagel</span>
+              <span class="clean-code">CN</span>
+              <span class="clean-name">China</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">DB Schenker</span>
+              <span class="clean-code">CN</span>
+              <span class="clean-name">China</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">PostNord</span>
+              <span class="clean-code">CN</span>
+              <span class="clean-name">China</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">Maersk</span>
+              <span class="clean-code">CN</span>
+              <span class="clean-name">China</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">DHL Express</span>
+              <span class="clean-code">TR</span>
+              <span class="clean-name">Turkey</span>
+            </div>
+            <div class="clean-row">
+              <span class="clean-carrier">DSV Air & Sea</span>
+              <span class="clean-code">TR</span>
+              <span class="clean-name">Turkey</span>
+            </div>
+          </div>
+        </div>
+        """)
+
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-details">
+      <div class="pipeline-details-title">Regex Normalization Patterns</div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">Pattern 1 — Full name variants</div>
+        <div class="pipeline-code">
+r"(?i)(people's republic of china|p\\.?r\\.? china|china|chn)" → "CN"
+r"(?i)(turkey|turkiye|türkiye|tr)" → "TR"
+r"(?i)(united states|usa|u\\.?s\\.?a?|united states of america)" → "US"
+        </div>
+        <div class="pipeline-detail-text">
+          Case-insensitive matching handles capitalization variants. Escaped dots handle "P.R." vs "PR" vs "P.R".
+          Ordered from most specific to least specific to avoid partial matches.
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">Pattern 2 — City + country extraction</div>
+        <div class="pipeline-code">
+r"(?i)(shenzhen|guangzhou|shanghai|beijing|ningbo)[,\\s]+(china|cn)" → "CN"
+r"(?i)(istanbul|izmir|ankara|mersin)[,\\s]+(turkey|turkiye|tr)" → "TR"
+        </div>
+        <div class="pipeline-detail-text">
+          When origin includes a city name, extract the country portion. Major port cities are whitelisted
+          to avoid false positives (e.g., "Paris, Texas" should not match France).
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">Pattern 3 — Already-clean codes</div>
+        <div class="pipeline-code">
+r"^[A-Z]{2}$" → pass through (already ISO 2-letter)
+r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
+        </div>
+        <div class="pipeline-detail-text">
+          If input is already a 2-letter code, validate against ISO table and pass through.
+          3-letter codes (CHN, TUR, USA) are mapped via lookup table to 2-letter equivalents.
+        </div>
+      </div>
+      
+      <div class="pipeline-detail-section">
+        <div class="pipeline-detail-label">Fallback — no match</div>
+        <div class="pipeline-detail-text">
+          If no regex matches, flag as "origin_unknown" and route to manual review queue.
+          Never guess — wrong origin can trigger sanctions violations or incorrect duty calculations.
+          Log the raw value for pattern analysis (may reveal new variants to add to regex library).
+        </div>
+      </div>
+    </div>
+    """)
+
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-flow">
+      <div class="pipeline-flow-title">Why Origin Matters</div>
+      <div class="pipeline-flow-note">
+        Country of origin directly affects: (1) <strong>Preferential duty rates</strong> — EU-Turkey customs union = 0% on many goods,
+        EU-China MFN = standard rates. (2) <strong>Trade sanctions</strong> — Russia, Belarus, North Korea require immediate stop.
+        (3) <strong>Anti-dumping duties</strong> — specific products from specific countries face additional tariffs (e.g., steel from China).
+        (4) <strong>Certificate requirements</strong> — EUR.1 for preferential origin, Form A for GSP.
+        Wrong origin = wrong duty = customs penalty or shipment seizure.
+      </div>
+    </div>
+    """)
+
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
     _md("""
