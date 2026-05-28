@@ -1405,7 +1405,7 @@ def main() -> None:
 
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
-    tab_dashboard, tab_pipeline = st.tabs(["Dashboard", "Data Pipeline"])
+    tab_dashboard, tab_pipeline, tab_api = st.tabs(["Dashboard", "Data Pipeline", "API"])
 
     with tab_dashboard:
         df, lane_statuses = render_data_input()
@@ -1426,6 +1426,313 @@ def main() -> None:
 
     with tab_pipeline:
         render_pipeline_showcase()
+
+    with tab_api:
+        render_api_showcase()
+
+
+def render_api_showcase() -> None:
+    """Render API documentation and example requests/responses."""
+    st.markdown("## API Layer")
+    st.markdown("REST API for programmatic access to parcel operations data.")
+    
+    st.markdown("### Base URL")
+    st.code("http://localhost:8000", language="text")
+    
+    st.markdown("### Authentication")
+    st.markdown("Mock API — no authentication required. Production would use API keys or OAuth2.")
+    
+    st.markdown("---")
+    
+    # Health check
+    st.markdown("### `GET /health`")
+    st.markdown("Health check endpoint.")
+    
+    with st.expander("Example", expanded=False):
+        st.markdown("**Request:**")
+        st.code("curl http://localhost:8000/health", language="bash")
+        
+        st.markdown("**Response:**")
+        st.code("""{
+  "status": "ok",
+  "version": "0.1.0",
+  "timestamp": "2026-05-28T15:30:45.123456"
+}""", language="json")
+    
+    st.markdown("---")
+    
+    # List batches
+    st.markdown("### `GET /api/batches`")
+    st.markdown("List all shipment batches with optional filters.")
+    
+    st.markdown("**Query Parameters:**")
+    st.markdown("- `carrier` (optional): Filter by carrier name")
+    st.markdown("- `origin` (optional): Filter by origin country code")
+    st.markdown("- `priority` (optional): Filter by priority (normal, high, critical)")
+    
+    with st.expander("Example: List all batches", expanded=False):
+        st.markdown("**Request:**")
+        st.code("curl http://localhost:8000/api/batches", language="bash")
+        
+        st.markdown("**Response:**")
+        st.code("""[
+  {
+    "batch_id": "FI-2026-001",
+    "carrier": "DHL Express",
+    "origin": "CN",
+    "expected_arrival": "2026-05-28",
+    "parcel_count": 450,
+    "hs_code": "3926.90",
+    "planned_owner": "Customs",
+    "priority": "high",
+    "notes": "HS code mismatch suspected"
+  },
+  {
+    "batch_id": "FI-2026-002",
+    "carrier": "DSV Air & Sea",
+    "origin": "DE",
+    "expected_arrival": "2026-05-29",
+    "parcel_count": 320,
+    "hs_code": "8542.31",
+    "planned_owner": "Operations",
+    "priority": "normal",
+    "notes": ""
+  }
+]""", language="json")
+    
+    with st.expander("Example: Filter by carrier", expanded=False):
+        st.markdown("**Request:**")
+        st.code("curl 'http://localhost:8000/api/batches?carrier=DHL%20Express'", language="bash")
+        
+        st.markdown("**Response:**")
+        st.code("""[
+  {
+    "batch_id": "FI-2026-001",
+    "carrier": "DHL Express",
+    "origin": "CN",
+    "expected_arrival": "2026-05-28",
+    "parcel_count": 450,
+    "hs_code": "3926.90",
+    "planned_owner": "Customs",
+    "priority": "high",
+    "notes": "HS code mismatch suspected"
+  }
+]""", language="json")
+    
+    st.markdown("---")
+    
+    # Get batch detail
+    st.markdown("### `GET /api/batch/{batch_id}`")
+    st.markdown("Get detailed information for a specific batch including lane statuses.")
+    
+    with st.expander("Example", expanded=False):
+        st.markdown("**Request:**")
+        st.code("curl http://localhost:8000/api/batch/FI-2026-001", language="bash")
+        
+        st.markdown("**Response:**")
+        st.code("""{
+  "batch_id": "FI-2026-001",
+  "carrier": "DHL Express",
+  "origin": "CN",
+  "expected_arrival": "2026-05-28",
+  "parcel_count": 450,
+  "hs_code": "3926.90",
+  "planned_owner": "Customs",
+  "priority": "high",
+  "notes": "HS code mismatch suspected",
+  "lane_statuses": [
+    {"lane": "Arrival", "status": "ok"},
+    {"lane": "Documents", "status": "warning"},
+    {"lane": "H7", "status": "critical"},
+    {"lane": "ICS2/ENS", "status": "ok"},
+    {"lane": "Last-mile", "status": "pending"},
+    {"lane": "Stopped", "status": "critical"},
+    {"lane": "EU Trucks", "status": "ok"},
+    {"lane": "Support", "status": "ok"}
+  ]
+}""", language="json")
+    
+    st.markdown("---")
+    
+    # Get diagnostics
+    st.markdown("### `GET /api/batch/{batch_id}/diagnostics`")
+    st.markdown("Get diagnostics for a specific batch.")
+    
+    with st.expander("Example", expanded=False):
+        st.markdown("**Request:**")
+        st.code("curl http://localhost:8000/api/batch/FI-2026-001/diagnostics", language="bash")
+        
+        st.markdown("**Response:**")
+        st.code("""[
+  {
+    "batch_id": "FI-2026-001",
+    "issue_type": "hs_mismatch",
+    "severity": "critical",
+    "confidence": 0.92,
+    "declared": "3926.90",
+    "expected": "8542.31",
+    "source": "Document Store",
+    "detail": "Invoice describes electronic components but HS code is for plastic articles",
+    "suggested_action": "Contact shipper for clarification and request amended invoice",
+    "duty_impact": "Potential 6.5% duty difference"
+  }
+]""", language="json")
+    
+    st.markdown("---")
+    
+    # Submit amendment
+    st.markdown("### `POST /api/batch/{batch_id}/amend`")
+    st.markdown("Submit an amendment request for a batch field.")
+    
+    st.markdown("**Request Body:**")
+    st.code("""{
+  "batch_id": "FI-2026-001",
+  "field": "hs_code",
+  "old_value": "3926.90",
+  "new_value": "8542.31",
+  "reason": "Invoice describes electronic components, not plastic articles"
+}""", language="json")
+    
+    with st.expander("Example", expanded=False):
+        st.markdown("**Request:**")
+        st.code("""curl -X POST http://localhost:8000/api/batch/FI-2026-001/amend \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "batch_id": "FI-2026-001",
+    "field": "hs_code",
+    "old_value": "3926.90",
+    "new_value": "8542.31",
+    "reason": "Invoice describes electronic components, not plastic articles"
+  }'""", language="bash")
+        
+        st.markdown("**Response:**")
+        st.code("""{
+  "status": "submitted",
+  "amendment_id": "AMD-A1B2C3D4",
+  "message": "Amendment request AMD-A1B2C3D4 submitted for batch FI-2026-001. Field 'hs_code' will be updated from '3926.90' to '8542.31'."
+}""", language="json")
+    
+    st.markdown("---")
+    
+    # Get HS code tree
+    st.markdown("### `GET /api/hs-code/{code}/tree`")
+    st.markdown("Get the HS code tree path for a given code.")
+    
+    with st.expander("Example", expanded=False):
+        st.markdown("**Request:**")
+        st.code("curl http://localhost:8000/api/hs-code/8542.31/tree", language="bash")
+        
+        st.markdown("**Response:**")
+        st.code("""[
+  {
+    "code": "Section XVI",
+    "label": "Machinery and mechanical appliances; electrical equipment",
+    "duty": null,
+    "highlight": null
+  },
+  {
+    "code": "85",
+    "label": "Electrical machinery and equipment and parts thereof",
+    "duty": null,
+    "highlight": null
+  },
+  {
+    "code": "8542",
+    "label": "Electronic integrated circuits",
+    "duty": null,
+    "highlight": null
+  },
+  {
+    "code": "8542.31",
+    "label": "Processors and controllers",
+    "duty": "0%",
+    "highlight": "expected"
+  }
+]""", language="json")
+    
+    st.markdown("---")
+    
+    # List all diagnostics
+    st.markdown("### `GET /api/diagnostics`")
+    st.markdown("List all diagnostics across all batches.")
+    
+    with st.expander("Example", expanded=False):
+        st.markdown("**Request:**")
+        st.code("curl http://localhost:8000/api/diagnostics", language="bash")
+        
+        st.markdown("**Response:**")
+        st.code("""[
+  {
+    "batch_id": "FI-2026-001",
+    "issue_type": "hs_mismatch",
+    "severity": "critical",
+    "confidence": 0.92,
+    "declared": "3926.90",
+    "expected": "8542.31",
+    "source": "Document Store",
+    "detail": "Invoice describes electronic components but HS code is for plastic articles",
+    "suggested_action": "Contact shipper for clarification and request amended invoice",
+    "duty_impact": "Potential 6.5% duty difference"
+  },
+  {
+    "batch_id": "FI-2026-004",
+    "issue_type": "missing_documents",
+    "severity": "warning",
+    "confidence": 0.85,
+    "declared": "",
+    "expected": "Commercial Invoice",
+    "source": "Document Store",
+    "detail": "Required document missing from batch",
+    "suggested_action": "Contact shipper to obtain missing documents",
+    "duty_impact": "Cannot assess duty impact without documents"
+  }
+]""", language="json")
+    
+    st.markdown("---")
+    
+    # Interactive docs
+    st.markdown("### Interactive Documentation")
+    st.markdown("Start the API server to access interactive Swagger UI:")
+    st.code("uvicorn api:app --reload --port 8000", language="bash")
+    st.markdown("Then visit: [http://localhost:8000/docs](http://localhost:8000/docs)")
+    
+    st.markdown("---")
+    
+    # Integration example
+    st.markdown("### Integration Example")
+    st.markdown("Python client using the API:")
+    
+    st.code("""import requests
+
+# List all batches
+response = requests.get("http://localhost:8000/api/batches")
+batches = response.json()
+
+# Get diagnostics for a specific batch
+batch_id = "FI-2026-001"
+response = requests.get(f"http://localhost:8000/api/batch/{batch_id}/diagnostics")
+diagnostics = response.json()
+
+for diag in diagnostics:
+    print(f"Issue: {diag['issue_type']}")
+    print(f"Severity: {diag['severity']}")
+    print(f"Action: {diag['suggested_action']}")
+    print()
+
+# Submit an amendment
+amendment = {
+    "batch_id": batch_id,
+    "field": "hs_code",
+    "old_value": "3926.90",
+    "new_value": "8542.31",
+    "reason": "Corrected based on invoice description"
+}
+response = requests.post(
+    f"http://localhost:8000/api/batch/{batch_id}/amend",
+    json=amendment
+)
+print(response.json())
+""", language="python")
 
 
 if __name__ == "__main__":
