@@ -70,7 +70,7 @@ TODAY = date.today()
 
 @st.cache_data(ttl=120)
 def load_demo_data():
-    df = demo_shipments(today=TODAY, n=8)
+    df = demo_shipments(today=TODAY)
     statuses = demo_lane_statuses(df["batch_id"].tolist())
     return df, statuses
 

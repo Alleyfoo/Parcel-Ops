@@ -9,8 +9,7 @@ This module owns:
 
 from __future__ import annotations
 
-import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Literal
 
@@ -123,66 +122,215 @@ def shipment_template() -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Synthetic demo data
+# Curated demo data — realistic scenarios with correlated lane statuses
 # ---------------------------------------------------------------------------
 
-_CARRIERS = [
-    "DHL Express",
-    "DB Schenker",
-    "Kuehne+Nagel",
-    "DSV Air & Sea",
-    "Maersk Logistics",
-    "PostNord",
+_SCENARIOS: list[dict] = [
+    {
+        "suffix": "001",
+        "carrier": "DHL Express",
+        "origin": "CN",
+        "arrival_offset": 0,
+        "parcel_count": 450,
+        "hs_code": "8471.30",
+        "planned_owner": "Customs",
+        "priority": "high",
+        "notes": "Invoice missing for HS 8471.30 — customs broker notified",
+        "lanes": {
+            "Arrival": "ok", "ICS2/ENS": "ok", "H7": "critical",
+            "Documents": "warning", "Stopped": "critical",
+            "Last-mile": "pending", "EU Trucks": "n/a", "Support": "warning",
+        },
+    },
+    {
+        "suffix": "002",
+        "carrier": "DSV Air & Sea",
+        "origin": "DE",
+        "arrival_offset": 0,
+        "parcel_count": 320,
+        "hs_code": "6110.30",
+        "planned_owner": "Ops-A",
+        "priority": "normal",
+        "notes": "",
+        "lanes": {
+            "Arrival": "ok", "ICS2/ENS": "ok", "H7": "ok",
+            "Documents": "ok", "Stopped": "ok",
+            "Last-mile": "ok", "EU Trucks": "ok", "Support": "ok",
+        },
+    },
+    {
+        "suffix": "003",
+        "carrier": "PostNord",
+        "origin": "SE",
+        "arrival_offset": -1,
+        "parcel_count": 180,
+        "hs_code": "4202.92",
+        "planned_owner": "Ops-B",
+        "priority": "high",
+        "notes": "Last-mile backlog at Helsinki depot — 48h SLA pressure",
+        "lanes": {
+            "Arrival": "ok", "ICS2/ENS": "ok", "H7": "ok",
+            "Documents": "ok", "Stopped": "ok",
+            "Last-mile": "warning", "EU Trucks": "ok", "Support": "warning",
+        },
+    },
+    {
+        "suffix": "004",
+        "carrier": "Kuehne+Nagel",
+        "origin": "TR",
+        "arrival_offset": 2,
+        "parcel_count": 620,
+        "hs_code": "8517.62",
+        "planned_owner": "Customs",
+        "priority": "high",
+        "notes": "ENS filing not submitted — broker awaiting commercial invoice",
+        "lanes": {
+            "Arrival": "pending", "ICS2/ENS": "critical", "H7": "pending",
+            "Documents": "warning", "Stopped": "pending",
+            "Last-mile": "pending", "EU Trucks": "pending", "Support": "ok",
+        },
+    },
+    {
+        "suffix": "005",
+        "carrier": "DB Schenker",
+        "origin": "PL",
+        "arrival_offset": -2,
+        "parcel_count": 290,
+        "hs_code": "9403.60",
+        "planned_owner": "Ops-A",
+        "priority": "normal",
+        "notes": "",
+        "lanes": {
+            "Arrival": "ok", "ICS2/ENS": "ok", "H7": "ok",
+            "Documents": "ok", "Stopped": "ok",
+            "Last-mile": "ok", "EU Trucks": "warning", "Support": "ok",
+        },
+    },
+    {
+        "suffix": "006",
+        "carrier": "Maersk Logistics",
+        "origin": "KR",
+        "arrival_offset": 5,
+        "parcel_count": 780,
+        "hs_code": "8528.72",
+        "planned_owner": "Ops-B",
+        "priority": "normal",
+        "notes": "Sea freight — ETA 5 days, pre-arrival docs not yet required",
+        "lanes": {
+            "Arrival": "pending", "ICS2/ENS": "pending", "H7": "pending",
+            "Documents": "pending", "Stopped": "pending",
+            "Last-mile": "pending", "EU Trucks": "pending", "Support": "ok",
+        },
+    },
+    {
+        "suffix": "007",
+        "carrier": "DHL Express",
+        "origin": "CN",
+        "arrival_offset": -1,
+        "parcel_count": 150,
+        "hs_code": "3926.90",
+        "planned_owner": "Customs",
+        "priority": "critical",
+        "notes": "Customs hold — HS code mismatch, documents rejected, broker escalation",
+        "lanes": {
+            "Arrival": "ok", "ICS2/ENS": "warning", "H7": "critical",
+            "Documents": "critical", "Stopped": "critical",
+            "Last-mile": "pending", "EU Trucks": "n/a", "Support": "critical",
+        },
+    },
+    {
+        "suffix": "008",
+        "carrier": "DSV Air & Sea",
+        "origin": "NL",
+        "arrival_offset": 0,
+        "parcel_count": 95,
+        "hs_code": "2204.21",
+        "planned_owner": "Ops-A",
+        "priority": "normal",
+        "notes": "",
+        "lanes": {
+            "Arrival": "ok", "ICS2/ENS": "ok", "H7": "ok",
+            "Documents": "ok", "Stopped": "ok",
+            "Last-mile": "ok", "EU Trucks": "ok", "Support": "ok",
+        },
+    },
+    {
+        "suffix": "009",
+        "carrier": "PostNord",
+        "origin": "SE",
+        "arrival_offset": -3,
+        "parcel_count": 410,
+        "hs_code": "6403.99",
+        "planned_owner": "Ops-B",
+        "priority": "critical",
+        "notes": "SLA breached — 72h since arrival, delivery attempts failed",
+        "lanes": {
+            "Arrival": "ok", "ICS2/ENS": "ok", "H7": "ok",
+            "Documents": "ok", "Stopped": "ok",
+            "Last-mile": "critical", "EU Trucks": "ok", "Support": "critical",
+        },
+    },
+    {
+        "suffix": "010",
+        "carrier": "DB Schenker",
+        "origin": "US",
+        "arrival_offset": 1,
+        "parcel_count": 540,
+        "hs_code": "8544.42",
+        "planned_owner": "Customs",
+        "priority": "high",
+        "notes": "Pre-arrival — ICS2 and invoice chase, arriving tomorrow",
+        "lanes": {
+            "Arrival": "pending", "ICS2/ENS": "warning", "H7": "pending",
+            "Documents": "warning", "Stopped": "pending",
+            "Last-mile": "pending", "EU Trucks": "pending", "Support": "ok",
+        },
+    },
 ]
 
-_ORIGINS = ["CN", "DE", "PL", "TR", "SE", "NL", "US", "KR"]
 
-_PRIORITIES = ["normal", "normal", "normal", "high", "critical"]
+def demo_shipments(today: date | None = None, n: int = 10) -> pd.DataFrame:
+    """Return curated shipment batches for demo mode.
 
-random.seed(42)
-
-
-def demo_shipments(today: date | None = None, n: int = 8) -> pd.DataFrame:
-    """Generate n synthetic shipment batches for demo mode."""
+    The *n* parameter is accepted for API compatibility but ignored;
+    all 10 scenarios are always returned.
+    """
     today = today or date.today()
     rows = []
-    for i in range(n):
-        arrival_offset = random.randint(-3, 7)
+    for s in _SCENARIOS:
         rows.append({
-            "batch_id": f"FI-{today.year}-{str(i + 1).zfill(3)}",
-            "carrier": random.choice(_CARRIERS),
-            "origin": random.choice(_ORIGINS),
-            "expected_arrival": today + timedelta(days=arrival_offset),
-            "parcel_count": random.randint(20, 800),
-            "hs_code": f"{random.randint(1000, 9999)}.{random.randint(10, 99)}",
-            "planned_owner": random.choice(["Ops-A", "Ops-B", "Customs"]),
-            "priority": random.choice(_PRIORITIES),
-            "notes": "",
+            "batch_id": f"FI-{today.year}-{s['suffix']}",
+            "carrier": s["carrier"],
+            "origin": s["origin"],
+            "expected_arrival": today + timedelta(days=s["arrival_offset"]),
+            "parcel_count": s["parcel_count"],
+            "hs_code": s["hs_code"],
+            "planned_owner": s["planned_owner"],
+            "priority": s["priority"],
+            "notes": s["notes"],
         })
     return pd.DataFrame(rows)
 
 
 # ---------------------------------------------------------------------------
-# Lane status generator (synthetic)
+# Lane status generator (curated)
 # ---------------------------------------------------------------------------
 
 def demo_lane_statuses(batch_ids: list[str]) -> dict[str, dict[str, LaneStatus]]:
-    """Return a dict of {batch_id: {lane: status}} for demo mode."""
-    rng = random.Random(7)
+    """Return correlated lane statuses for curated demo scenarios.
+
+    Matches by batch_id suffix. Falls back to all-pending for unknown IDs
+    (e.g. uploaded data).
+    """
+    scenario_by_suffix = {s["suffix"]: s for s in _SCENARIOS}
     result: dict[str, dict[str, LaneStatus]] = {}
     for bid in batch_ids:
-        statuses: dict[str, LaneStatus] = {}
-        for lane in LANES:
-            r = rng.random()
-            if r < 0.60:
-                statuses[lane] = "ok"
-            elif r < 0.80:
-                statuses[lane] = "pending"
-            elif r < 0.92:
-                statuses[lane] = "warning"
-            else:
-                statuses[lane] = "critical"
-        result[bid] = statuses
+        suffix = bid.rsplit("-", 1)[-1] if "-" in bid else bid
+        scenario = scenario_by_suffix.get(suffix)
+        if scenario:
+            result[bid] = dict(scenario["lanes"])
+        else:
+            result[bid] = {lane: "pending" for lane in LANES}
     return result
 
 
@@ -239,12 +387,12 @@ class FreshnessEntry:
 
 
 def demo_data_freshness() -> list[FreshnessEntry]:
-    """Return synthetic freshness entries for demo mode."""
+    """Return freshness entries reflecting current demo scenarios."""
     return [
-        FreshnessEntry("Carrier API", "fresh", "2 min ago", "DHL, DSV, PostNord connected"),
-        FreshnessEntry("Customs API", "stale", "47 min ago", "H7 feed delayed — retry pending"),
-        FreshnessEntry("ICS2 Portal", "fresh", "8 min ago", "EU ENS filing status synced"),
-        FreshnessEntry("Tracking DB", "fresh", "1 min ago", "Last-mile events streaming"),
-        FreshnessEntry("Document Store", "partial", "12 min ago", "3 batches awaiting upload"),
+        FreshnessEntry("Carrier API", "fresh", "2 min ago", "DHL, DSV, PostNord, Schenker connected"),
+        FreshnessEntry("Customs API", "stale", "47 min ago", "H7 feed delayed — 2 batches unconfirmed (FI-001, FI-007)"),
+        FreshnessEntry("ICS2 Portal", "partial", "14 min ago", "ENS gap for FI-004 (TR) — filing not received"),
+        FreshnessEntry("Tracking DB", "fresh", "1 min ago", "Last-mile events streaming — FI-009 SLA breach flagged"),
+        FreshnessEntry("Document Store", "partial", "8 min ago", "3 batches with doc issues (FI-001, FI-007, FI-010)"),
         FreshnessEntry("EU Truck Schedule", "missing", "—", "Integration not yet configured"),
     ]
