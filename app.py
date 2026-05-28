@@ -834,6 +834,248 @@ def check_hs_mismatch(invoice_data, hs_db):
     </div>
     """)
 
+    st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="section">
+      <div class="section-head">
+        <div class="left"><h2>Pre-Classification <span class="muted">— when no HS code is provided</span></h2></div>
+        <div class="right">4 input scenarios</div>
+      </div>
+    </div>
+    """)
+
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-detail-text" style="margin-bottom:20px;">
+      Not every importer provides a standard 6-digit HS code. The system must handle four common input types
+      before the tree walk can begin. Each requires a different pre-classification step to produce a valid
+      starting point for the HS tree.
+    </div>
+    """)
+
+    col_a, col_b = st.columns([1, 1])
+
+    with col_a:
+        _md("""
+        <div class="scenario-card">
+          <div class="scenario-header">
+            <div class="scenario-num">A</div>
+            <div class="scenario-title">CN Code Only (8-digit EU)</div>
+          </div>
+          <div class="scenario-body">
+            <div class="scenario-label">Input</div>
+            <div class="scenario-code">CN: 8542 31 90</div>
+
+            <div class="scenario-steps">
+              <div class="scenario-step">
+                <span class="step-num">1</span>
+                <span class="step-text">Strip to 6-digit HS root: <strong>8542.31</strong></span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">2</span>
+                <span class="step-text">Validate against HS tree: 8542.31 exists in tree under Chapter 85</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">3</span>
+                <span class="step-text">Re-extend to TARIC: query TARIC API for 8542 31 90 measures</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">4</span>
+                <span class="step-text">Check for surveillance, anti-dumping, preferential rates</span>
+              </div>
+            </div>
+
+            <div class="scenario-result ok">
+              <span class="scenario-result-label">Result:</span>
+              CN 8542 31 90 → HS 8542.31 → TARIC 8542 31 90 00
+              <br>Duty: 0% | No restrictions | Dual-use check: pass
+            </div>
+          </div>
+        </div>
+        """)
+
+    with col_b:
+        _md("""
+        <div class="scenario-card">
+          <div class="scenario-header">
+            <div class="scenario-num">B</div>
+            <div class="scenario-title">National Tariff Line (Country-Specific)</div>
+          </div>
+          <div class="scenario-body">
+            <div class="scenario-label">Input</div>
+            <div class="scenario-code">US HTS: 8542.31.0050</div>
+
+            <div class="scenario-steps">
+              <div class="scenario-step">
+                <span class="step-num">1</span>
+                <span class="step-text">Identify origin: US HTS (10-digit national code)</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">2</span>
+                <span class="step-text">Crosswalk lookup: US HTS 8542.31.0050 → HS 8542.31</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">3</span>
+                <span class="step-text">Validate: HS 8542.31 exists in tree (processors/controllers)</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">4</span>
+                <span class="step-text">Extend to EU TARIC: 8542 31 → query for EU-specific measures</span>
+              </div>
+            </div>
+
+            <div class="scenario-result warn">
+              <span class="scenario-result-label">Result:</span>
+              US HTS 8542.31.0050 → HS 8542.31 → TARIC 8542 31 90 00
+              <br>Duty: 0% | Crosswalk confidence: 94% | Flagged for manual verify
+            </div>
+          </div>
+        </div>
+        """)
+
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
+    col_c, col_d = st.columns([1, 1])
+
+    with col_c:
+        _md("""
+        <div class="scenario-card">
+          <div class="scenario-header">
+            <div class="scenario-num">C</div>
+            <div class="scenario-title">No Code — Text Description Only</div>
+          </div>
+          <div class="scenario-body">
+            <div class="scenario-label">Input</div>
+            <div class="scenario-code">"Ceramic coffee mugs, glazed, 350ml, made in China"</div>
+
+            <div class="scenario-steps">
+              <div class="scenario-step">
+                <span class="step-num">1</span>
+                <span class="step-text">Extract keywords: ceramic, coffee, mugs, glazed, 350ml</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">2</span>
+                <span class="step-text">Score chapters: Ch.69 (ceramics) = 0.87, Ch.70 (glass) = 0.21</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">3</span>
+                <span class="step-text">Walk tree: 69 → 6911 (tableware of porcelain) → 6911.10</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">4</span>
+                <span class="step-text">Material check: "ceramic" + "glazed" → porcelain subheading confirmed</span>
+              </div>
+            </div>
+
+            <div class="scenario-result warn">
+              <span class="scenario-result-label">Result:</span>
+              Suggested: 6911.10 (Tableware of porcelain or china)
+              <br>Confidence: 87% | Duty: 12% | Flagged for customs officer review
+            </div>
+          </div>
+        </div>
+        """)
+
+    with col_d:
+        _md("""
+        <div class="scenario-card">
+          <div class="scenario-header">
+            <div class="scenario-num">D</div>
+            <div class="scenario-title">Internal SKU — Historical Lookup</div>
+          </div>
+          <div class="scenario-body">
+            <div class="scenario-label">Input</div>
+            <div class="scenario-code">Shipper SKU: SHENZ-ELEC-IC7805</div>
+
+            <div class="scenario-steps">
+              <div class="scenario-step">
+                <span class="step-num">1</span>
+                <span class="step-text">Query shipment history: SKU SHENZ-ELEC-IC7805 seen 14 times</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">2</span>
+                <span class="step-text">Last classification: 8542.31 (2026-04-12, cleared by customs)</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">3</span>
+                <span class="step-text">Validate: HS 8542.31 still active in current TARIC version</span>
+              </div>
+              <div class="scenario-step">
+                <span class="step-num">4</span>
+                <span class="step-text">Check: no duty rate changes or new restrictions since last clearance</span>
+              </div>
+            </div>
+
+            <div class="scenario-result ok">
+              <span class="scenario-result-label">Result:</span>
+              SKU SHENZ-ELEC-IC7805 → HS 8542.31 (from history)
+              <br>Confidence: 96% | Duty: 0% | Auto-approved (repeat shipper, clean record)
+            </div>
+          </div>
+        </div>
+        """)
+
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+
+    _md("""
+    <div class="pipeline-flow">
+      <div class="pipeline-flow-title">Pre-Classification Decision Tree</div>
+      <div class="pipeline-flow-diagram" style="flex-wrap:wrap;gap:12px;">
+        <div class="flow-step">
+          <div class="flow-box">Raw Input</div>
+          <div class="flow-arrow">→</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box highlight">Input Type Detection</div>
+          <div class="flow-arrow">→</div>
+        </div>
+      </div>
+      <div class="pipeline-flow-diagram" style="flex-wrap:wrap;gap:12px;margin-top:8px;">
+        <div class="flow-step">
+          <div class="flow-box">8-digit → CN strip</div>
+          <div class="flow-arrow">|</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">10-digit → crosswalk</div>
+          <div class="flow-arrow">|</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">text → keyword classify</div>
+          <div class="flow-arrow">|</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">SKU → history lookup</div>
+        </div>
+      </div>
+      <div class="pipeline-flow-diagram" style="flex-wrap:wrap;gap:12px;margin-top:8px;">
+        <div class="flow-step">
+          <div class="flow-arrow" style="margin-right:0;">→</div>
+          <div class="flow-box highlight">6-digit HS Code</div>
+          <div class="flow-arrow">→</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">Tree Walk</div>
+          <div class="flow-arrow">→</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">TARIC Extension</div>
+          <div class="flow-arrow">→</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-box">Diagnostic Output</div>
+        </div>
+      </div>
+      <div class="pipeline-flow-note">
+        Input type detection uses regex patterns: 8-digit numeric = CN, 10-digit with dots = national tariff,
+        alphabetic string = text description, alphanumeric with dashes = internal SKU.
+        All paths converge at a validated 6-digit HS code before entering the tree walk.
+        Confidence below 80% triggers manual review queue regardless of input type.
+      </div>
+    </div>
+    """)
+
 
 # ---------------------------------------------------------------------------
 # Main
