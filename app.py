@@ -10,8 +10,7 @@ Lanes: Arrival | ICS2/ENS | H7 | Documents | Stopped | Last-mile | EU Trucks | S
 
 from __future__ import annotations
 
-import os
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -1591,8 +1590,18 @@ def render_api_showcase() -> None:
     st.markdown("## API Layer")
     st.markdown("REST API for programmatic access to parcel operations data.")
     
+    st.info("**Note:** The API server runs separately from this dashboard. On Streamlit Cloud, this tab shows documentation only. For local development, run `uvicorn api:app --reload --port 8000` to start the API server.")
+    
+    # Configurable base URL
+    api_base_url = st.text_input(
+        "API Base URL",
+        value="http://localhost:8000",
+        help="Base URL for API examples. Change this if your API runs on a different host/port.",
+        key="api_base_url"
+    )
+    
     st.markdown("### Base URL")
-    st.code("http://localhost:8000", language="text")
+    st.code(api_base_url, language="text")
     
     st.markdown("### Authentication")
     st.markdown("Mock API — no authentication required. Production would use API keys or OAuth2.")
@@ -1605,7 +1614,7 @@ def render_api_showcase() -> None:
     
     with st.expander("Example", expanded=False):
         st.markdown("**Request:**")
-        st.code("curl http://localhost:8000/health", language="bash")
+        st.code(f"curl {api_base_url}/health", language="bash")
         
         st.markdown("**Response:**")
         st.code("""{
@@ -1627,7 +1636,7 @@ def render_api_showcase() -> None:
     
     with st.expander("Example: List all batches", expanded=False):
         st.markdown("**Request:**")
-        st.code("curl http://localhost:8000/api/batches", language="bash")
+        st.code(f"curl {api_base_url}/api/batches", language="bash")
         
         st.markdown("**Response:**")
         st.code("""[
@@ -1657,7 +1666,7 @@ def render_api_showcase() -> None:
     
     with st.expander("Example: Filter by carrier", expanded=False):
         st.markdown("**Request:**")
-        st.code("curl 'http://localhost:8000/api/batches?carrier=DHL%20Express'", language="bash")
+        st.code(f"curl '{api_base_url}/api/batches?carrier=DHL%20Express'", language="bash")
         
         st.markdown("**Response:**")
         st.code("""[
@@ -1682,7 +1691,7 @@ def render_api_showcase() -> None:
     
     with st.expander("Example", expanded=False):
         st.markdown("**Request:**")
-        st.code("curl http://localhost:8000/api/batch/FI-2026-001", language="bash")
+        st.code(f"curl {api_base_url}/api/batch/FI-2026-001", language="bash")
         
         st.markdown("**Response:**")
         st.code("""{
@@ -1715,7 +1724,7 @@ def render_api_showcase() -> None:
     
     with st.expander("Example", expanded=False):
         st.markdown("**Request:**")
-        st.code("curl http://localhost:8000/api/batch/FI-2026-001/diagnostics", language="bash")
+        st.code(f"curl {api_base_url}/api/batch/FI-2026-001/diagnostics", language="bash")
         
         st.markdown("**Response:**")
         st.code("""[
@@ -1750,15 +1759,15 @@ def render_api_showcase() -> None:
     
     with st.expander("Example", expanded=False):
         st.markdown("**Request:**")
-        st.code("""curl -X POST http://localhost:8000/api/batch/FI-2026-001/amend \\
+        st.code(f"""curl -X POST {api_base_url}/api/batch/FI-2026-001/amend \\
   -H "Content-Type: application/json" \\
-  -d '{
+  -d '{{
     "batch_id": "FI-2026-001",
     "field": "hs_code",
     "old_value": "3926.90",
     "new_value": "8542.31",
     "reason": "Invoice describes electronic components, not plastic articles"
-  }'""", language="bash")
+  }}'""", language="bash")
         
         st.markdown("**Response:**")
         st.code("""{
@@ -1775,7 +1784,7 @@ def render_api_showcase() -> None:
     
     with st.expander("Example", expanded=False):
         st.markdown("**Request:**")
-        st.code("curl http://localhost:8000/api/hs-code/8542.31/tree", language="bash")
+        st.code(f"curl {api_base_url}/api/hs-code/8542.31/tree", language="bash")
         
         st.markdown("**Response:**")
         st.code("""[
@@ -1813,7 +1822,7 @@ def render_api_showcase() -> None:
     
     with st.expander("Example", expanded=False):
         st.markdown("**Request:**")
-        st.code("curl http://localhost:8000/api/diagnostics", language="bash")
+        st.code(f"curl {api_base_url}/api/diagnostics", language="bash")
         
         st.markdown("**Response:**")
         st.code("""[
@@ -1849,7 +1858,7 @@ def render_api_showcase() -> None:
     st.markdown("### Interactive Documentation")
     st.markdown("Start the API server to access interactive Swagger UI:")
     st.code("uvicorn api:app --reload --port 8000", language="bash")
-    st.markdown("Then visit: [http://localhost:8000/docs](http://localhost:8000/docs)")
+    st.markdown(f"Then visit: [{api_base_url}/docs]({api_base_url}/docs)")
     
     st.markdown("---")
     
@@ -1857,33 +1866,33 @@ def render_api_showcase() -> None:
     st.markdown("### Integration Example")
     st.markdown("Python client using the API:")
     
-    st.code("""import requests
+    st.code(f"""import requests
 
 # List all batches
-response = requests.get("http://localhost:8000/api/batches")
+response = requests.get("{api_base_url}/api/batches")
 batches = response.json()
 
 # Get diagnostics for a specific batch
 batch_id = "FI-2026-001"
-response = requests.get(f"http://localhost:8000/api/batch/{batch_id}/diagnostics")
+response = requests.get(f"{api_base_url}/api/batch/{{batch_id}}/diagnostics")
 diagnostics = response.json()
 
 for diag in diagnostics:
-    print(f"Issue: {diag['issue_type']}")
-    print(f"Severity: {diag['severity']}")
-    print(f"Action: {diag['suggested_action']}")
+    print(f"Issue: {{diag['issue_type']}}")
+    print(f"Severity: {{diag['severity']}}")
+    print(f"Action: {{diag['suggested_action']}}")
     print()
 
 # Submit an amendment
-amendment = {
+amendment = {{
     "batch_id": batch_id,
     "field": "hs_code",
     "old_value": "3926.90",
     "new_value": "8542.31",
     "reason": "Corrected based on invoice description"
-}
+}}
 response = requests.post(
-    f"http://localhost:8000/api/batch/{batch_id}/amend",
+    f"{api_base_url}/api/batch/{{batch_id}}/amend",
     json=amendment
 )
 print(response.json())
@@ -2044,7 +2053,8 @@ def render_documents_showcase() -> None:
     with st.expander("Integration Points", expanded=False):
         st.markdown("**API Integration**:")
         st.code("""# Generate amendment letter from API response
-response = requests.get("http://localhost:8000/api/batch/FI-2026-001/diagnostics")
+API_BASE = "http://localhost:8000"  # Configure for your environment
+response = requests.get(f"{API_BASE}/api/batch/FI-2026-001/diagnostics")
 diagnostics = response.json()
 
 if diagnostics:

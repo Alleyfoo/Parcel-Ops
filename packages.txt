@@ -1,0 +1,2 @@
+# System dependencies for Streamlit Cloud
+# Currently none required — reportlab uses pure Python

@@ -8,7 +8,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
 
 #MainMenu, header[data-testid="stHeader"], footer { visibility: hidden; height: 0 !important; }
-.stDeployButton, [data-testid="stToolbar"] { display: none !important; }
 [data-testid="stAppViewContainer"] > .main { padding: 0 !important; }
 [data-testid="stMainBlockContainer"], .block-container {
   max-width: 1440px !important;
