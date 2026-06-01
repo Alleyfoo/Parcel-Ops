@@ -142,12 +142,15 @@ def classify_with_llm(
             is_mock=True,
         )
 
-    if not cfg.api_key:
+    if not cfg.api_key and cfg.provider != "ollama":
         return ClassificationResult(
             method="llm",
             hs_code="—",
             confidence=0.0,
-            reasoning="No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+            reasoning=(
+                f"No API key. Enter a {cfg.provider.title()} key in the sidebar, "
+                f"or set GEMINI_API_KEY env var."
+            ),
             is_mock=True,
         )
 
