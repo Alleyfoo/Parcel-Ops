@@ -125,7 +125,7 @@ def classify_with_llm(
         return _mock_llm_result(description)
 
     try:
-        from llm import classify_hs_code, load_llm_config
+        from parcel_ops_llm import classify_hs_code, load_llm_config
         import streamlit as st
         overrides = st.session_state.get("_llm_overrides", {})
         try:

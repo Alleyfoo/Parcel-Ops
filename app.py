@@ -1415,7 +1415,7 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
         get_all_test_cases,
         get_statistics,
     )
-    from llm import (
+    from parcel_ops_llm import (
         DEFAULT_GEMINI_MODELS,
         load_llm_config,
         probe_connection,
