@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "captured_at": "2026-06-01T15:18:46+00:00",
-  "model": "llama3.2:latest",
+  "captured_at": "2026-06-01T16:46:07+00:00",
+  "model": "llama3.1:8b",
   "results": [
     {
       "gold_hs_code": "8542.31",
@@ -21,11 +21,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "3502.90",
-        "confidence": 0.9,
-        "reasoning": "Plastic housing for electronic devices falls under Chapter 35, heading 2, subheading 90, as it is a container or casing for an electrical device.",
+        "hs_code": "3926.90",
+        "confidence": 1.0,
+        "reasoning": "The product is a plastic article, specifically a housing for an electronic device, which falls under Chapter 39 of the Harmonized System. The specific classification as 'other articles of plastics and articles of other materials of heading 3901 to 3914' (3926) is appropriate due to its use in housing electronic circuit boards.",
         "correct": null,
-        "latency_ms": 5662.239699973725,
+        "latency_ms": 11249.966400035191,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -49,11 +49,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "4507.10",
-        "confidence": 0.9,
-        "reasoning": "Rubber mounts are classified under Chapter 45 (Raw hides and skins) but since they are mounted on a metal frame, it falls under Chapter 47 (Articles of steel or iron). The specific product is a machinery support structure with rubber mounts, which aligns with the classification of 'other articles of steel or iron'.",
+        "hs_code": "7326.90",
+        "confidence": 1.0,
+        "reasoning": "The product is classified as a metal frame (Chapter 73) specifically designed for machinery, with rubber mounting (excluded from Chapter 40). The General Rule of Interpretation 3(b) applies, and the product's primary function is to provide structural support, making 7326.90 the most suitable classification.",
         "correct": null,
-        "latency_ms": 8409.001699998043,
+        "latency_ms": 11229.8490999965,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -77,11 +77,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "3536.90",
+        "hs_code": "6913.90",
         "confidence": 0.9,
-        "reasoning": "The ceramic coffee mug is classified under Chapter 35 (Articles of ceramics, porcelain, and other potsherds) and subheading 3536.90.10, as it is a ceramic article with no specific functional features that would require classification in another chapter.",
+        "reasoning": "The product is classified as a ceramic coffee mug (Chapter 69) under GRI 1, as it is a good of a kind that has not been previously mentioned in the Harmonized System. The specific characteristics such as electronic heating element and Bluetooth connectivity do not change its essential character as a ceramic coffee mug.",
         "correct": null,
-        "latency_ms": 7279.699599952437,
+        "latency_ms": 10160.592300002463,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -105,11 +105,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "3502.10",
-        "confidence": 0.9,
-        "reasoning": "The product is a USB flash drive with a plastic shell, which falls under Chapter 35 of the Harmonized System, subheading 35.02.10.00, covering other articles for the same use as data carriers.",
+        "hs_code": "8525.30",
+        "confidence": 1.0,
+        "reasoning": "The product is a mass-market consumer storage device with flash memory, which falls under Chapter 85 (Electrical machinery and equipment) and specifically within the category of 'parts and accessories' for electrical equipment in Heading 8525. The presence of plastic shell further supports this classification.",
         "correct": null,
-        "latency_ms": 6751.0707000037655,
+        "latency_ms": 9790.201399999205,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -133,11 +133,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "8539.10",
-        "confidence": 0.9,
-        "reasoning": "Electronic voltage regulators with integrated circuits are classified as electrical machinery and apparatus, specifically as 'Other parts of electrical machinery' (HS Chapter 85).",
+        "hs_code": "8543.70",
+        "confidence": 1.0,
+        "reasoning": "The product is described as an electronic voltage regulator with integrated circuits, which falls under the category of 'Electronic components and boards' in Chapter 85 of the Harmonized System. The specific code 8543.70 covers 'Electrical, electronic and optical parts of base appliances; vacuum fluorecent lamps and other electro-luminescent sources'.",
         "correct": null,
-        "latency_ms": 5177.103299996816,
+        "latency_ms": 10976.051300007384,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -161,11 +161,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "3505.10",
+        "hs_code": "3926.90",
         "confidence": 0.9,
-        "reasoning": "Plastic electronic component housings are classified under HS code 3505.10.00 as they are made of plastic and serve as a housing for an electronic component.",
+        "reasoning": "The product is described as a plastic electronic component casing, which suggests it falls under Chapter 39 (Plastics and Articles Thereof). The specific classification of 3926 (Other articles of plastics) and the more detailed code 3926.9010 (Other articles of plastics, other) indicates that the product is a type of plastic article not specified elsewhere in this chapter.",
         "correct": null,
-        "latency_ms": 5556.707399955485,
+        "latency_ms": 11430.669100023806,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -189,11 +189,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "3505.10",
-        "confidence": 0.9,
-        "reasoning": "Modules of a kind used in any fixed installations for generating electricity (solar modules) are classified under chapter 35. The specific classification as 'policristalinos' is not necessary to determine the HS code.",
+        "hs_code": "8507.30",
+        "confidence": 1.0,
+        "reasoning": "The product description mentions 'módulos fotovoltaicos' which translates to photovoltaic modules, and specifies a power rating of 400W. According to the EU Combined Nomenclature, solar panels or other photovoltaic generators with a peak power not exceeding 1000W are classified under 8507.30.",
         "correct": null,
-        "latency_ms": 4152.434299991,
+        "latency_ms": 11332.068299991079,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -217,11 +217,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "8539.90",
-        "confidence": 0.8,
-        "reasoning": "Kit of replacement parts for an industrial control system, classified under machinery and mechanical appliances, other.",
+        "hs_code": "8544.40",
+        "confidence": 0.9,
+        "reasoning": "The kit contains electronic components (circuit boards and connectors) and an electrical power supply, which are all classified under Chapter 85 (Electrical machinery). The specific classification of 8544.40 covers 'Electrical control or protection equipment' which includes industrial control systems.",
         "correct": null,
-        "latency_ms": 2820.0879000360146,
+        "latency_ms": 9343.280899978708,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -231,7 +231,7 @@
       "gold_hs_code": "6109.10",
       "expected_winner": "regex",
       "regex_correct": true,
-      "llm_correct": false,
+      "llm_correct": true,
       "case_id": "regex_wins_1",
       "description": "Cotton t-shirt, men's, knitted",
       "regex_result": {
@@ -245,11 +245,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "6202.30",
-        "confidence": 0.9,
-        "reasoning": "Men's knitted cotton t-shirt falls under Chapter 6, Section X of the EU Combined Nomenclature, specifically HS code 6202.30.10 for men's knitted tops made from cotton.",
+        "hs_code": "6109.10",
+        "confidence": 1.0,
+        "reasoning": "The product is a knitted garment made of cotton, which falls under Chapter 61 (Articles of apparel and clothing accessories, knitted or crocheted). The specific code 6109.10 covers men's or boys' shirts, knitted or crocheted, of cotton.",
         "correct": null,
-        "latency_ms": 4775.799999944866,
+        "latency_ms": 9699.393599992618,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -273,11 +273,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "8215.10",
-        "confidence": 0.9,
-        "reasoning": "Stainless steel kitchen knives are classified under Chapter 21, heading 15, subheading 10, as cutlery of base metal, specifically stainless steel.",
+        "hs_code": "8211.99",
+        "confidence": 0.95,
+        "reasoning": "The product is a set of stainless steel kitchen knives, which falls under Chapter 82 (Tools, implements, cutlery, spoons and forks, and other articles) of the Harmonized System. The specific code 8211.99 covers 'Other articles of cutlery' not elsewhere specified or included.",
         "correct": null,
-        "latency_ms": 4251.335699984338,
+        "latency_ms": 10434.585999988485,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -301,11 +301,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "4905.10",
-        "confidence": 0.9,
-        "reasoning": "Software license key printed on a paper card is classified as a printed matter, specifically a document, under Chapter 49 of the Harmonized System.",
+        "hs_code": "8524.40",
+        "confidence": 1.0,
+        "reasoning": "The product is a software license key printed on paper, which falls under Chapter 85 (Electrical machinery; sound recorders and reproducers, television image and sound recorders and reproducers, and parts and accessories of such articles) and specifically under heading 8524 (Other electronic equipment). The subheading 8524.40 covers 'Printed circuits' but also includes other printed or written information on paper or card.",
         "correct": null,
-        "latency_ms": 3752.250300021842,
+        "latency_ms": 12554.674200015143,
         "is_mock": false
       },
       "llm_pitfall": "LLMs tend to default to 8523 or 8471 because the description mentions 'software'. Correct answer requires knowing that the carrier matters when no medium is present.",
@@ -315,7 +315,7 @@
       "gold_hs_code": "8471.30",
       "expected_winner": "regex",
       "regex_correct": true,
-      "llm_correct": false,
+      "llm_correct": true,
       "case_id": "llm_hallucination_2",
       "description": "Refurbished laptop computer, 14 inch",
       "regex_result": {
@@ -329,11 +329,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "3505.10",
-        "confidence": 0.9,
-        "reasoning": "Refurbished laptop computer is classified under Chapter 35, Section X of the Harmonized System, subheading 3505.10.90, as it falls within the scope of used or refurbished computers.",
+        "hs_code": "8471.30",
+        "confidence": 0.95,
+        "reasoning": "The product is a laptop computer, which falls under Chapter 84 of the Harmonized System. As it's a refurbished laptop, we consider its essential character to be that of a laptop (GRI 3(b)). The specific characteristics such as RAM and SSD are not sufficient to change the classification from a general laptop category. Therefore, we classify it under 8471.30, which covers 'Laptops and notebooks with LCD screens'.",
         "correct": null,
-        "latency_ms": 4680.464599980041,
+        "latency_ms": 12756.550399994012,
         "is_mock": false
       },
       "llm_pitfall": "LLMs may flag 'refurbished' as requiring a different code or may incorrectly apply used-goods subheadings when classification is identical to new.",
