@@ -1,4 +1,4 @@
-"""Capture a live Gemini baseline and persist it to `llm_saved_results.json`.
+"""Capture a live LLM baseline and persist it to `llm_saved_results.json`.
 
 This is the one-time (or as-needed) data-collection step that produces the
 pre-saved file shipped with the repo. On first open of the LLM tab, a
@@ -9,23 +9,25 @@ in place).
 
 Usage
 -----
-    # Pass the key on the command line
-    python scripts/capture_llm_baseline.py --api-key YOUR_GEMINI_KEY
+    # Cloud (gemini, paced to stay under the 5 RPM free-tier limit)
+    python scripts/capture_llm_baseline.py --provider gemini --api-key YOUR_GEMINI_KEY
 
-    # Or set the env var (this is what the dashboard reads too)
+    # Local ollama (no rate limit, no API key, ~3s/case)
+    python scripts/capture_llm_baseline.py --provider ollama --model llama3.2:latest
+
+    # Or set the env vars (the dashboard reads these too)
     set GEMINI_API_KEY=YOUR_GEMINI_KEY        # PowerShell
-    export GEMINI_API_KEY=YOUR_GEMINI_KEY     # bash
+    set LLM_PROVIDER=ollama
+    set LLM_MODEL=llama3.2:latest
     python scripts/capture_llm_baseline.py
-
-    # Pick a different model (default: gemini-2.5-flash)
-    python scripts/capture_llm_baseline.py --model gemini-2.0-flash
 
 Pacing
 ------
 Free-tier Gemini is throttled to ~5 RPM (one call per 12s). The script
 paces at 13s/call to stay safely below the limit and stops cleanly on a
-429, saving whatever it captured so far. The dashboard's "Re-run" button
-behaves the same way.
+429, saving whatever it captured so far. Ollama is local with no rate
+limit, so by default we send the next call as soon as the previous one
+returns (~30s for 12 cases).
 """
 
 from __future__ import annotations
@@ -42,12 +44,16 @@ sys.path.insert(0, str(ROOT))
 from llm_classifier import (
     ClassificationResult,
     build_evald,
-    classify_with_llm,
     get_all_test_cases,
     get_statistics,
     save_results,
 )
-from parcel_ops_llm import LLMError, RateLimitError, load_llm_config
+from parcel_ops_llm import (
+    LLMError,
+    RateLimitError,
+    classify_hs_code,
+    load_llm_config,
+)
 
 
 PACE_SECONDS = 13.0
@@ -55,52 +61,107 @@ PACE_SECONDS = 13.0
 
 def _print(msg: str) -> None:
     # Plain stdout, no rich output — the user is watching a 3-min script.
-    print(msg, flush=True)
+    # Use ASCII fallbacks for ✓/✗ etc so the script works on Windows
+    # consoles that default to cp1252.
+    safe = msg.replace("✓", "+").replace("✗", "x").replace("…", "...")
+    try:
+        print(safe, flush=True)
+    except UnicodeEncodeError:
+        # Last-ditch: encode with errors=replace
+        print(safe.encode("ascii", errors="replace").decode("ascii"), flush=True)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Capture a live LLM baseline.")
     parser.add_argument(
+        "--provider",
+        default=None,
+        choices=["gemini", "ollama"],
+        help="Provider to call. Default: gemini (matches the dashboard's default).",
+    )
+    parser.add_argument(
         "--api-key",
         default=None,
-        help="Gemini API key. Falls back to GEMINI_API_KEY / LLM_API_KEY env.",
+        help="API key. Falls back to GEMINI_API_KEY / OLLAMA_API_KEY / LLM_API_KEY env. Ignored for ollama.",
     )
     parser.add_argument(
         "--model",
         default=None,
-        help="Model to call (default: parcel_ops_llm default, gemini-2.5-flash).",
+        help="Model to call (default: parcel_ops_llm default for the provider).",
+    )
+    parser.add_argument(
+        "--base-url",
+        default=None,
+        help="Override the OpenAI-compat base URL (e.g. for remote ollama).",
     )
     parser.add_argument(
         "--out",
         default=None,
         help="Override output path. Default: <repo>/llm_saved_results.json",
     )
+    parser.add_argument(
+        "--no-pace",
+        action="store_true",
+        help="Don't sleep between calls. Use for ollama (no rate limit).",
+    )
     args = parser.parse_args()
 
     overrides = {}
+    if args.provider:
+        overrides["provider"] = args.provider
     if args.api_key:
         overrides["api_key"] = args.api_key
     if args.model:
         overrides["model"] = args.model
+    if args.base_url:
+        overrides["base_url"] = args.base_url
 
     cfg = load_llm_config(overrides)
-    if not cfg.api_key:
-        _print("No API key. Pass --api-key or set GEMINI_API_KEY.")
+    if cfg.provider != "ollama" and not cfg.api_key:
+        _print(f"No API key for {cfg.provider}. Pass --api-key or set GEMINI_API_KEY.")
         return 2
 
     cases = get_all_test_cases()
     n = len(cases)
-    _print(f"Capturing baseline: model={cfg.model}  cases={n}  pace={PACE_SECONDS:.0f}s")
-    _print(f"Estimated time: ~{int(n * PACE_SECONDS / 60)} min.\n")
+    # No pacing for ollama — no rate limit, no API cost per call.
+    pace = 0.0 if (args.no_pace or cfg.provider == "ollama") else PACE_SECONDS
+    _print(f"Capturing baseline: provider={cfg.provider}  model={cfg.model}  base_url={cfg.base_url}  cases={n}  pace={pace:.0f}s")
+    if pace > 0:
+        _print(f"Estimated time: ~{int(n * pace / 60)} min.\n")
+    else:
+        _print("")
 
     results: list[dict] = []
     rate_limited_at: int | None = None
 
     for i, case in enumerate(cases, 1):
-        _print(f"[{i}/{n}] {case['description'][:60]}…")
+        _print(f"[{i}/{n}] {case['description'][:60]}...")
         t0 = time.perf_counter()
         try:
-            llm_res = classify_with_llm(case["description"], case.get("context", ""))
+            # Call the LLM directly with our own config. Don't go through
+            # llm_classifier.classify_with_llm — it always rebuilds cfg
+            # from streamlit session state, ignoring ours.
+            parsed, latency = classify_hs_code(cfg, case["description"], case.get("context", ""))
+            llm_dict = parsed
+            # Normalize the error shape to a ClassificationResult for build_evald
+            if "error" in parsed:
+                llm_res = ClassificationResult(
+                    method="llm",
+                    hs_code="—",
+                    confidence=0.0,
+                    reasoning=str(parsed["error"]),
+                    latency_ms=latency * 1000,
+                    is_mock=False,
+                )
+            else:
+                llm_res = ClassificationResult(
+                    method="llm",
+                    hs_code=str(parsed.get("hs_code", "—")),
+                    confidence=float(parsed.get("confidence", 0.5)),
+                    reasoning=str(parsed.get("reasoning", "")).strip(),
+                    latency_ms=latency * 1000,
+                    is_mock=False,
+                )
         except (RateLimitError, LLMError) as e:
             _print(f"  ERROR: {e}")
             # Re-raise via the classifier's no-key stub so the JSON
@@ -122,13 +183,13 @@ def main() -> int:
         ok = "✓" if llm_dict.get("hs_code") == case["gold_hs_code"] else "✗"
         gold = case["gold_hs_code"]
         actual = llm_dict.get("hs_code", "—")
-        latency = llm_dict.get("latency_ms")
-        latency_s = f"  ({latency:.0f} ms)" if isinstance(latency, (int, float)) else ""
+        llm_latency = llm_dict.get("latency_ms")
+        latency_s = f"  ({llm_latency:.0f} ms)" if isinstance(llm_latency, (int, float)) else ""
         _print(f"  {ok}  gold={gold}  llm={actual}{latency_s}")
 
-        if i < n:
+        if i < n and pace > 0:
             elapsed = time.perf_counter() - t0
-            sleep_for = max(0.0, PACE_SECONDS - elapsed)
+            sleep_for = max(0.0, pace - elapsed)
             if sleep_for > 0:
                 time.sleep(sleep_for)
 
