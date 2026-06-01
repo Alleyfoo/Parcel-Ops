@@ -37,10 +37,13 @@ DEFAULT_GEMINI_MODELS = [
 # Ollama defaults. The model list is dynamic — `load_llm_config()` queries
 # the live /v1/models endpoint and falls back to these when the server
 # isn't reachable (so the UI still has *something* to populate the
-# dropdown with).
+# dropdown with). llama3.1:8b is the default because llama3.2:latest
+# (2GB, 4-bit) is too small for HS classification — it scored 0/12 on
+# the showcase; llama3.1:8b scores 2/12 (the easy T-shirt and the
+# refurbished laptop).
 DEFAULT_OLLAMA_MODELS = [
-    "llama3.2:latest",
     "llama3.1:8b",
+    "llama3.2:latest",
     "qwen3.5:9b",
     "gemma4:latest",
     "codestral:latest",
@@ -101,7 +104,7 @@ def load_llm_config(
 
     # Default model is provider-specific. Ollama has many tags (`:latest`,
     # `:8b`, etc) so the dashboard usually overrides this.
-    default_model = "llama3.2:latest" if provider == "ollama" else "gemini-2.5-flash"
+    default_model = "llama3.1:8b" if provider == "ollama" else "gemini-2.5-flash"
     model = (
         os.environ.get("LLM_MODEL")
         or overrides.get("model", default_model)

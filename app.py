@@ -1564,7 +1564,7 @@ def render_llm_showcase() -> None:
     else:
         model_options = list(DEFAULT_GEMINI_MODELS)
 
-    default_model = "llama3.2:latest" if cfg_now.provider == "ollama" else "gemini-2.5-flash"
+    default_model = "llama3.1:8b" if cfg_now.provider == "ollama" else "gemini-2.5-flash"
     current_model = overrides.get("model", default_model)
     if current_model not in model_options:
         model_options = [current_model] + model_options
