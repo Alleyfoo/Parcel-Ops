@@ -1549,7 +1549,11 @@ def render_llm_showcase() -> None:
             label = "—"
         st.metric("LLM vs Regex", label)
 
-    # Run-all controls
+    # Run-all controls. Free-tier Gemini is ~5 RPM (one request per 12s),
+    # so we pace the batch with a 13s gap between calls. On 429 we stop
+    # and mark remaining cases as rate-limited rather than failing them.
+    _RUN_PACE_SECONDS = 13.0
+
     run_col, _ = st.columns([1, 3])
     with run_col:
         run_clicked = st.button(
@@ -1557,30 +1561,91 @@ def render_llm_showcase() -> None:
             type="primary",
             use_container_width=True,
             disabled=not cfg_now.api_key,
-            help="Calls Gemini once per test case. Free-tier rate limits apply.",
+            help=(
+                f"Calls Gemini once per test case, paced at {_RUN_PACE_SECONDS:.0f}s "
+                f"to stay under the free-tier 5 RPM limit. For 12 cases this takes ~3 minutes."
+            ),
         )
 
     if run_clicked and cfg_now.api_key:
+        import time as _time
         results = []
         progress = st.progress(0.0, text="Starting…")
+        eta_text = st.empty()
+        hit_rate_limit = False
+        n = len(test_cases)
+        # Pre-fill the batch slot so the per-case view is populated even
+        # for rate-limited cases (we'll overwrite llm_result below).
         for i, case in enumerate(test_cases, 1):
-            progress.progress(
-                (i - 1) / len(test_cases),
-                text=f"Case {i}/{len(test_cases)}: {case['description'][:50]}…",
-            )
-            with st.spinner(f"Case {i}/{len(test_cases)}: {case['description'][:60]}…"):
+            case_start = _time.perf_counter()
+            if hit_rate_limit and i > 1:
+                # Mark this case as rate-limited without calling the API.
                 regex_res = classify_with_regex(case["description"], case.get("context", ""))
-                llm_res = classify_with_llm(case["description"], case.get("context", ""))
-                evald = evaluate_results(case, regex_res, llm_res)
-                evald["case_id"] = case["id"]
-                evald["description"] = case["description"]
-                evald["expected_winner"] = case.get("expected_winner")
-                evald["regex_result"] = regex_res.to_dict()
-                evald["llm_result"] = llm_res.to_dict()
-                evald["llm_pitfall"] = case.get("llm_pitfall")
-                evald["gold_reasoning"] = case.get("gold_reasoning", "")
-                results.append(evald)
+                llm_dict = {
+                    "method": "llm",
+                    "hs_code": "—",
+                    "confidence": 0.0,
+                    "reasoning": (
+                        "Skipped — free-tier rate limit hit on a previous case in this batch. "
+                        "Click 'Run this case' below to retry, or wait ~60s and run the batch again."
+                    ),
+                    "latency_ms": None,
+                    "is_mock": False,
+                    "rate_limited": True,
+                }
+                from dataclasses import dataclass as _dc
+                @_dc
+                class _Stub:
+                    method: str = "llm"
+                    hs_code: str = "—"
+                    confidence: float = 0.0
+                    reasoning: str = ""
+                    correct: bool = False
+                    latency_ms: object = None
+                    is_mock: bool = False
+                    def to_dict(self_inner): return llm_dict
+                llm_res = _Stub()
+            else:
+                progress.progress(
+                    (i - 1) / n,
+                    text=f"Case {i}/{n}: {case['description'][:50]}…",
+                )
+                eta_text.caption(
+                    f"ETA ~{int((n - i + 1) * _RUN_PACE_SECONDS / 60)} min — pacing {_RUN_PACE_SECONDS:.0f}s between calls."
+                )
+                with st.spinner(f"Case {i}/{n}: {case['description'][:60]}…"):
+                    regex_res = classify_with_regex(case["description"], case.get("context", ""))
+                    llm_res = classify_with_llm(case["description"], case.get("context", ""))
+
+            evald = evaluate_results(case, regex_res, llm_res)
+            evald["case_id"] = case["id"]
+            evald["description"] = case["description"]
+            evald["expected_winner"] = case.get("expected_winner")
+            evald["regex_result"] = regex_res.to_dict()
+            evald["llm_result"] = llm_res.to_dict()
+            evald["llm_pitfall"] = case.get("llm_pitfall")
+            evald["gold_reasoning"] = case.get("gold_reasoning", "")
+            results.append(evald)
+
+            # If this case got rate-limited, halt the batch — we know
+            # the next call would also 429.
+            if llm_res.to_dict().get("rate_limited"):
+                hit_rate_limit = True
+                st.warning(
+                    f"Rate limit hit on case {i}/{n}. Remaining cases marked as 'skipped' — "
+                    f"you can run them individually with the per-case buttons below, or "
+                    f"wait ~60s and click 'Run LLM on all cases' again."
+                )
+
+            # Pace: sleep between calls (skip after the last one, and
+            # skip if we just got rate-limited — no point waiting).
+            if i < n and not hit_rate_limit:
+                elapsed = _time.perf_counter() - case_start
+                sleep_for = max(0.0, _RUN_PACE_SECONDS - elapsed)
+                if sleep_for > 0:
+                    _time.sleep(sleep_for)
         progress.progress(1.0, text="Done.")
+        eta_text.empty()
         st.session_state["llm_results"] = results
         st.rerun()
 
@@ -1626,6 +1691,43 @@ def render_llm_showcase() -> None:
                 st.markdown("**Context:**")
                 ctx = case_meta.get("context", "") if case_meta else ""
                 st.info(ctx)
+
+            # Per-case run button: lets the user run a single case against
+            # the LLM without pacing through the full batch (useful for
+            # retrying a 429 or skipping ahead when the free tier is busy).
+            per_case_col, _ = st.columns([1, 3])
+            with per_case_col:
+                run_this = st.button(
+                    "Run LLM on this case",
+                    key=f"run_case_{i}",
+                    disabled=not cfg_now.api_key,
+                    use_container_width=True,
+                    help=(
+                        "Calls Gemini once for this case and updates the LLM column in place. "
+                        "Useful for retrying a rate-limited case without re-running the whole batch."
+                    ),
+                )
+
+            if run_this and cfg_now.api_key:
+                with st.spinner(f"Calling Gemini for case {i}…"):
+                    llm_res = classify_with_llm(r["description"], case_meta.get("context", "") if case_meta else "")
+                # Rebuild the evald shape used by the batch path so the
+                # expander rendering below works unchanged.
+                from llm_classifier import ClassificationResult as _CR
+                regex_obj = _CR(**r["regex_result"])
+                evald = evaluate_results(case_meta, regex_obj, llm_res)
+                evald["case_id"] = r["case_id"]
+                evald["description"] = r["description"]
+                evald["expected_winner"] = r.get("expected_winner")
+                evald["regex_result"] = r["regex_result"]
+                evald["llm_result"] = llm_res.to_dict()
+                evald["llm_pitfall"] = r.get("llm_pitfall")
+                evald["gold_reasoning"] = r.get("gold_reasoning", "")
+                # Patch the in-memory list and persist to session state so
+                # the result survives a rerun.
+                results[i - 1] = evald
+                st.session_state["llm_results"] = results
+                st.rerun()
 
             st.markdown("---")
 
