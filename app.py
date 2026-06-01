@@ -1399,91 +1399,264 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
     _md("""
     <div class="section">
       <div class="section-head">
-        <div class="left"><h2>LLM vs Regex <span class="muted">— where AI outperforms pattern matching</span></h2></div>
-        <div class="right">6 test cases</div>
+        <div class="left"><h2>LLM vs Regex <span class="muted">— HS classification showcase with live Gemini calls</span></h2></div>
+        <div class="right" id="llm-case-count">12 test cases</div>
       </div>
     </div>
     """)
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-    _md("""
-    <div class="pipeline-detail-text" style="margin-bottom:20px;">
-      Regex-based classification works well for structured data but struggles with ambiguity, context, and multi-language inputs.
-      Large Language Models (LLMs) understand semantics, infer context, and handle natural language descriptions.
-      Below are real-world cases where LLM classification outperforms regex pattern matching.
-    </div>
-    """)
+    # Import LLM showcase
+    from llm_classifier import (
+        classify_with_llm,
+        classify_with_regex,
+        evaluate_results,
+        get_all_test_cases,
+        get_statistics,
+    )
+    from llm import (
+        DEFAULT_GEMINI_MODELS,
+        load_llm_config,
+        probe_connection,
+    )
 
-    # Import LLM classifier
-    from llm_classifier import get_all_test_cases, get_statistics
-
-    stats = get_statistics()
     test_cases = get_all_test_cases()
 
-    # Statistics summary
+    # ----- LLM configuration panel -----------------------------------------
+    if "_llm_overrides" not in st.session_state:
+        st.session_state["_llm_overrides"] = {}
+
+    overrides = st.session_state["_llm_overrides"]
+
+    cfg_now = load_llm_config(overrides, secrets={})
+
+    _md("""
+    <div class="pipeline-card" style="margin-bottom:16px;">
+      <div class="pipeline-header">
+        <div class="pipeline-num">LLM</div>
+        <div class="pipeline-title">Configuration</div>
+      </div>
+      <div class="pipeline-body" style="padding-top:8px;">
+    """)
+
+    col_key, col_model, col_probe = st.columns([3, 2, 1])
+
+    with col_key:
+        new_key = st.text_input(
+            "Gemini API key",
+            value=overrides.get("api_key", ""),
+            type="password",
+            help="Free-tier key from aistudio.google.com. Stored in session only — never written to disk.",
+            key="llm_api_key_input",
+        )
+        if new_key != overrides.get("api_key", ""):
+            overrides["api_key"] = new_key
+            st.session_state["_llm_overrides"] = overrides
+            st.session_state.pop("llm_probe_result", None)
+            st.rerun()
+
+    with col_model:
+        model_options = DEFAULT_GEMINI_MODELS
+        current_model = overrides.get("model", "gemini-2.0-flash")
+        if current_model not in model_options:
+            model_options = [current_model] + list(model_options)
+        new_model = st.selectbox(
+            "Model",
+            model_options,
+            index=model_options.index(current_model),
+            key="llm_model_select",
+        )
+        if new_model != current_model:
+            overrides["model"] = new_model
+            st.session_state["_llm_overrides"] = overrides
+            st.session_state.pop("llm_probe_result", None)
+            st.rerun()
+
+    with col_probe:
+        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+        probe_clicked = st.button("Test connection", use_container_width=True)
+
+    # Probe result with 5-min cache
+    if probe_clicked or "llm_probe_result" not in st.session_state:
+        if probe_clicked:
+            with st.spinner("Probing Gemini…"):
+                ok, msg = probe_connection(cfg_now)
+            st.session_state["llm_probe_result"] = (ok, msg, __import__("time").time())
+
+    probe = st.session_state.get("llm_probe_result")
+    if probe:
+        ok, msg, _ = probe
+        if ok:
+            st.success(f"Connected to {cfg_now.model} — {msg}")
+        else:
+            st.warning(f"Probe: {msg}")
+
+    if not cfg_now.api_key:
+        st.caption(
+            "No API key configured. LLM column will show placeholders. "
+            "Set GEMINI_API_KEY env var, or enter a key above."
+        )
+
+    _md("</div></div>")
+
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    # ----- Stats header (placeholder values until run) ---------------------
+    if "llm_results" not in st.session_state:
+        st.session_state["llm_results"] = None  # None = not yet run
+
+    results = st.session_state["llm_results"]
+    stats = get_statistics(results)
+
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Test Cases", stats["total_cases"])
+        st.metric("Test Cases", stats["total_cases"] or len(test_cases))
     with col2:
-        st.metric("Regex Accuracy", f"{stats['regex_accuracy']:.0%}")
+        st.metric("Regex Accuracy", f"{stats['regex_accuracy']:.0%}" if results else "—")
     with col3:
-        st.metric("LLM Accuracy", f"{stats['llm_accuracy']:.0%}")
+        st.metric("LLM Accuracy", f"{stats['llm_accuracy']:.0%}" if results else "—")
     with col4:
-        improvement = stats['llm_accuracy'] - stats['regex_accuracy']
-        st.metric("LLM Improvement", f"+{improvement:.0%}")
+        if results:
+            delta = stats["llm_accuracy"] - stats["regex_accuracy"]
+            label = f"{delta:+.0%}"
+        else:
+            label = "—"
+        st.metric("LLM vs Regex", label)
 
-    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+    # Run-all controls
+    run_col, _ = st.columns([1, 3])
+    with run_col:
+        run_clicked = st.button(
+            "Run LLM on all cases",
+            type="primary",
+            use_container_width=True,
+            disabled=not cfg_now.api_key,
+            help="Calls Gemini once per test case. Free-tier rate limits apply.",
+        )
 
-    # Test cases
-    for i, case in enumerate(test_cases, 1):
-        with st.expander(f"Case {i}: {case['description']}", expanded=(i == 1)):
+    if run_clicked and cfg_now.api_key:
+        results = []
+        progress = st.progress(0.0, text="Starting…")
+        for i, case in enumerate(test_cases, 1):
+            progress.progress(
+                (i - 1) / len(test_cases),
+                text=f"Case {i}/{len(test_cases)}: {case['description'][:50]}…",
+            )
+            with st.spinner(f"Case {i}/{len(test_cases)}: {case['description'][:60]}…"):
+                regex_res = classify_with_regex(case["description"], case.get("context", ""))
+                llm_res = classify_with_llm(case["description"], case.get("context", ""))
+                evald = evaluate_results(case, regex_res, llm_res)
+                evald["case_id"] = case["id"]
+                evald["description"] = case["description"]
+                evald["expected_winner"] = case.get("expected_winner")
+                evald["regex_result"] = regex_res.to_dict()
+                evald["llm_result"] = llm_res.to_dict()
+                evald["llm_pitfall"] = case.get("llm_pitfall")
+                evald["gold_reasoning"] = case.get("gold_reasoning", "")
+                results.append(evald)
+        progress.progress(1.0, text="Done.")
+        st.session_state["llm_results"] = results
+        st.rerun()
+
+    if results is None:
+        st.info(
+            "Click **Run LLM on all cases** to call Gemini. The LLM column below "
+            "will populate with real model output and accuracy stats will be computed "
+            "from the gold HS codes in the test cases."
+        )
+        # Pre-fill with regex-only results for the per-case view
+        results = []
+        for case in test_cases:
+            regex_res = classify_with_regex(case["description"], case.get("context", ""))
+            llm_res = classify_with_llm(case["description"], case.get("context", ""))
+            evald = evaluate_results(case, regex_res, llm_res)
+            evald["case_id"] = case["id"]
+            evald["description"] = case["description"]
+            evald["expected_winner"] = case.get("expected_winner")
+            evald["regex_result"] = regex_res.to_dict()
+            evald["llm_result"] = llm_res.to_dict()
+            evald["llm_pitfall"] = case.get("llm_pitfall")
+            evald["gold_reasoning"] = case.get("gold_reasoning", "")
+            results.append(evald)
+
+    # ----- Per-case expanders ----------------------------------------------
+    for i, r in enumerate(results, 1):
+        case_meta = next((c for c in test_cases if c["id"] == r["case_id"]), None)
+        category = case_meta.get("category", "") if case_meta else ""
+        cat_label = {
+            "ambiguous_product": "ambiguous",
+            "multilang": "multilang",
+            "multi_component": "kit",
+            "clean_keyword": "regex-favoured",
+            "edge_case": "edge case",
+        }.get(category, category)
+        header = f"Case {i}: {r['description']}  ·  gold {r['gold_hs_code']}  ·  {cat_label}"
+        with st.expander(header, expanded=(i == 1)):
             col_desc, col_context = st.columns([1, 1])
             with col_desc:
                 st.markdown("**Description:**")
-                st.code(case['description'])
+                st.code(r["description"])
             with col_context:
                 st.markdown("**Context:**")
-                st.info(case['context'])
+                ctx = case_meta.get("context", "") if case_meta else ""
+                st.info(ctx)
 
             st.markdown("---")
 
             col_regex, col_llm = st.columns([1, 1])
 
             with col_regex:
-                regex = case['regex_result']
-                status_icon = "✓" if regex.correct else "✗"
-                status_color = "green" if regex.correct else "red"
-
-                st.markdown(f"**Regex Classification** <span style='color:{status_color}'>{status_icon}</span>", unsafe_allow_html=True)
-                st.markdown(f"**HS Code:** `{regex.hs_code}`")
-                st.markdown(f"**Confidence:** {regex.confidence:.0%}")
-                st.markdown("**Reasoning:**")
-                st.caption(regex.reasoning)
-
-                if not regex.correct:
-                    st.error("Incorrect classification")
+                regex = r["regex_result"]
+                ok = r["regex_correct"]
+                icon = "✓" if ok else "✗"
+                color = "var(--ok, #1f8a4c)" if ok else "var(--crit, #c0392b)"
+                st.markdown(
+                    f"**Regex** <span style='color:{color}'>{icon}</span>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(f"HS Code: `{regex['hs_code']}`")
+                st.markdown(f"Confidence: {regex['confidence']:.0%}")
+                st.markdown("Reasoning:")
+                st.caption(regex["reasoning"])
+                if r["expected_winner"] == "regex":
+                    st.caption("Expected: regex correct")
 
             with col_llm:
-                llm = case['llm_result']
-                status_icon = "✓" if llm.correct else "✗"
-                status_color = "green" if llm.correct else "red"
+                llm = r["llm_result"]
+                ok = r["llm_correct"]
+                icon = "✓" if ok else "✗"
+                color = "var(--ok, #1f8a4c)" if ok else "var(--crit, #c0392b)"
+                st.markdown(
+                    f"**LLM ({cfg_now.model})** <span style='color:{color}'>{icon}</span>",
+                    unsafe_allow_html=True,
+                )
+                if llm.get("is_mock"):
+                    st.caption("Mock result — see config panel above.")
+                if llm.get("latency_ms") is not None:
+                    st.markdown(f"Latency: {llm['latency_ms']:.0f} ms")
+                st.markdown(f"HS Code: `{llm['hs_code']}`")
+                st.markdown(f"Confidence: {llm['confidence']:.0%}")
+                st.markdown("Reasoning:")
+                st.caption(llm["reasoning"] or "(no reasoning returned)")
+                if r["expected_winner"] == "llm" and r["llm_correct"]:
+                    st.success("LLM correct, regex wrong — LLM wins this case.")
+                if r["expected_winner"] == "regex" and r["llm_correct"] and not r["regex_correct"]:
+                    st.warning("LLM won unexpectedly — verify against the gold reasoning.")
+                if r["llm_pitfall"]:
+                    st.caption(f"Known LLM pitfall: {r['llm_pitfall']}")
 
-                st.markdown(f"**LLM Classification** <span style='color:{status_color}'>{status_icon}</span>", unsafe_allow_html=True)
-                st.markdown(f"**HS Code:** `{llm.hs_code}`")
-                st.markdown(f"**Confidence:** {llm.confidence:.0%}")
-                st.markdown("**Reasoning:**")
-                st.caption(llm.reasoning)
-
-                if llm.correct:
-                    st.success("Correct classification")
+            if r.get("gold_reasoning"):
+                with st.expander("Gold reasoning", expanded=False):
+                    st.caption(r["gold_reasoning"])
 
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
+    # ----- Why-LLMs and Hybrid sections (kept from before) ------------------
     _md("""
     <div class="pipeline-details">
-      <div class="pipeline-details-title">Why LLMs Excel at Classification</div>
-      
+      <div class="pipeline-details-title">Why LLMs Excel at Classification — and Where They Don't</div>
+
       <div class="pipeline-detail-section">
         <div class="pipeline-detail-label">1. Semantic Understanding</div>
         <div class="pipeline-detail-text">
@@ -1492,16 +1665,16 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
           Regex only sees keywords and cannot infer relationships between them.
         </div>
       </div>
-      
+
       <div class="pipeline-detail-section">
         <div class="pipeline-detail-label">2. Multi-Language Support</div>
         <div class="pipeline-detail-text">
           LLMs are trained on multilingual data and can classify descriptions in German, Chinese, French, etc.
           without separate regex patterns for each language. They understand that "Elektronische Spannungsregler"
-          (German) and "电子稳压器" (Chinese) both mean "electronic voltage regulators".
+          (German) and "塑料电子元件外壳" (Chinese) both refer to electronic component parts.
         </div>
       </div>
-      
+
       <div class="pipeline-detail-section">
         <div class="pipeline-detail-label">3. Context Awareness</div>
         <div class="pipeline-detail-text">
@@ -1509,22 +1682,14 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
           kits are classified by their essential character. Regex cannot make this inference from keywords alone.
         </div>
       </div>
-      
+
       <div class="pipeline-detail-section">
-        <div class="pipeline-detail-label">4. Natural Language Explanations</div>
+        <div class="pipeline-detail-label">4. Where regex still wins</div>
         <div class="pipeline-detail-text">
-          LLMs provide human-readable reasoning that customs officers can understand and verify.
-          This builds trust and enables faster dispute resolution. Regex provides only confidence scores
-          without explanation of why a classification was chosen.
-        </div>
-      </div>
-      
-      <div class="pipeline-detail-section">
-        <div class="pipeline-detail-label">5. Handling Ambiguity</div>
-        <div class="pipeline-detail-text">
-          Products like "ceramic coffee mug with electronic heating element" are genuinely ambiguous.
-          LLMs can weigh competing factors (ceramic vs electronic) and apply classification rules.
-          Regex would need explicit rules for every possible combination, which is impractical.
+          Clean, structured descriptions (e.g. "Cotton t-shirt, men's, knitted" or "Stainless steel kitchen knives, set of 6")
+          have a direct HS-code mapping. The LLM adds latency and cost without benefit — and in edge cases like
+          software-on-paper or refurbished-vs-new, LLMs sometimes confidently choose the wrong code. Regex with a
+          known-good keyword list is faster, cheaper, and occasionally more correct.
         </div>
       </div>
     </div>
@@ -1542,6 +1707,10 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
         <br><br>
         <strong>Confidence Thresholds:</strong> Regex confidence > 90% → accept. 70-90% → LLM verification. < 70% → LLM classification.
         This ensures fast processing for clear cases while leveraging AI for complex scenarios.
+        <br><br>
+        <strong>Verification layer:</strong> For high-value or high-risk shipments, send the LLM answer back to a second
+        model or to a human reviewer. The showcase above demonstrates that neither method is infallible — the gold HS
+        code is the only ground truth.
       </div>
     </div>
     """)

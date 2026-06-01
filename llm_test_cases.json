@@ -1,0 +1,112 @@
+[
+  {
+    "id": "ambiguous_1",
+    "category": "ambiguous_product",
+    "description": "Plastic housing for electronic device",
+    "context": "Shipment contains plastic enclosures that house electronic circuit boards.",
+    "gold_hs_code": "8542.31",
+    "gold_reasoning": "The plastic housing is specifically designed to contain electronic circuit boards. By GRI 1 and Note 1(g) to Chapter 39, articles of plastic which are parts of goods of Chapter 85 are classified in Chapter 85. Essential character is electronic.",
+    "expected_winner": "llm"
+  },
+  {
+    "id": "ambiguous_2",
+    "category": "ambiguous_product",
+    "description": "Metal frame with rubber mounting for machinery",
+    "context": "Steel support structure with vibration-dampening rubber mounts for industrial equipment.",
+    "gold_hs_code": "8431.49",
+    "gold_reasoning": "Classified as a part of machinery under heading 8431 (parts suitable for use solely or principally with the machinery of headings 8425 to 8430). The rubber mounts indicate purpose-built mounting, not a general steel article.",
+    "expected_winner": "llm"
+  },
+  {
+    "id": "ambiguous_3",
+    "category": "ambiguous_product",
+    "description": "Ceramic coffee mug with electronic heating element",
+    "context": "Smart mug with built-in temperature control and Bluetooth connectivity.",
+    "gold_hs_code": "8516.71",
+    "gold_reasoning": "Electric heating appliance. Ceramic is incidental; essential character is the electro-thermic function. Note 1(u) to Chapter 85 confirms Chapter 69 ceramic articles fitted with electrical features fall in Chapter 85.",
+    "expected_winner": "llm"
+  },
+  {
+    "id": "ambiguous_4",
+    "category": "ambiguous_product",
+    "description": "USB flash drive, 64GB, plastic shell",
+    "context": "Mass-market consumer storage device. Description mentions both 'USB' and 'plastic' and 'flash memory'.",
+    "gold_hs_code": "8523.51",
+    "gold_reasoning": "Solid-state non-volatile storage device. Heading 8523 covers semiconductor media. Despite the plastic enclosure, the essential character is the storage medium. Plastic shell is incidental packaging.",
+    "expected_winner": "llm"
+  },
+  {
+    "id": "multilang_1",
+    "category": "multilang",
+    "description": "Elektronische Spannungsregler, integrierte Schaltkreise",
+    "context": "German invoice line item, 2,400 units.",
+    "gold_hs_code": "8542.31",
+    "gold_reasoning": "Translation: 'Electronic voltage regulators, integrated circuits'. The term 'integrierte Schaltkreise' (integrated circuits) is definitive for heading 8542.",
+    "expected_winner": "llm"
+  },
+  {
+    "id": "multilang_2",
+    "category": "multilang",
+    "description": "塑料电子元件外壳",
+    "context": "Chinese invoice line item, 1,200 units.",
+    "gold_hs_code": "8542.31",
+    "gold_reasoning": "Translation: 'Plastic electronic component housing/shell'. By Chapter 39 Note 1(g), parts of goods of Chapter 85 are classified in Chapter 85. Essential character is electronic component housing.",
+    "expected_winner": "llm"
+  },
+  {
+    "id": "multilang_3",
+    "category": "multilang",
+    "description": "Módulos fotovoltaicos, 400W policristalinos",
+    "context": "Spanish invoice, solar modules for commercial installation.",
+    "gold_hs_code": "8541.43",
+    "gold_reasoning": "Translation: 'Photovoltaic modules, 400W polycrystalline'. Heading 8541 covers photosensitive semiconductor devices including photovoltaic cells and modules.",
+    "expected_winner": "llm"
+  },
+  {
+    "id": "kit_1",
+    "category": "multi_component",
+    "description": "Replacement parts kit",
+    "context": "Kit contains: 2x circuit boards, 1x power supply, 5x connectors, 1x manual. For repair of industrial control system, sold as a single SKU.",
+    "gold_hs_code": "8537.10",
+    "gold_reasoning": "Per GRI 3(b), kits are classified by the component that gives them essential character. The control boards and power supply together form a control panel assembly, classified under 8537 (boards/panels for electric control).",
+    "expected_winner": "llm"
+  },
+  {
+    "id": "regex_wins_1",
+    "category": "clean_keyword",
+    "description": "Cotton t-shirt, men's, knitted",
+    "context": "Apparel import, 5,000 units, basic cotton construction.",
+    "gold_hs_code": "6109.10",
+    "gold_reasoning": "T-shirt, knitted, of cotton. Heading 6109 (T-shirts, of cotton or other textile materials, knitted or crocheted). Direct keyword match with no ambiguity.",
+    "expected_winner": "regex"
+  },
+  {
+    "id": "regex_wins_2",
+    "category": "clean_keyword",
+    "description": "Stainless steel kitchen knives, set of 6",
+    "context": "Household cutlery set, retail packaging.",
+    "gold_hs_code": "8211.91",
+    "gold_reasoning": "Kitchen knives with stainless steel blades. Heading 8211 covers knives with cutting edges, serrated or not. Set classified as kitchen knives by GRI 1.",
+    "expected_winner": "regex"
+  },
+  {
+    "id": "llm_hallucination_1",
+    "category": "edge_case",
+    "description": "Software license key, printed on paper card",
+    "context": "Single sheet of paper with 25-character alphanumeric code. No physical media, no USB, no DVD.",
+    "gold_hs_code": "4901.99",
+    "gold_reasoning": "Printed matter. Per Note 1(m) to Chapter 85 and Section XV Note 6, software delivered as printed license code without physical media is classified by the carrier (paper) under heading 4901. Many LLMs incorrectly jump to 8523 (recording media) or 8471 (automatic data processing) by associating with software.",
+    "expected_winner": "regex",
+    "llm_pitfall": "LLMs tend to default to 8523 or 8471 because the description mentions 'software'. Correct answer requires knowing that the carrier matters when no medium is present."
+  },
+  {
+    "id": "llm_hallucination_2",
+    "category": "edge_case",
+    "description": "Refurbished laptop computer, 14 inch",
+    "context": "Used ThinkPad X1 Carbon, 16GB RAM, 512GB SSD. Has been factory-refurbished by manufacturer; comes with full 1-year warranty equivalent to new unit.",
+    "gold_hs_code": "8471.30",
+    "gold_reasoning": "Portable automatic data processing machine. Refurbished units keep the same HS classification as new (Note 1(a) to Chapters 84-85 does not exclude used/refurbished goods). Some LLMs incorrectly apply 'used' surcharges or different headings for refurbished electronics.",
+    "expected_winner": "regex",
+    "llm_pitfall": "LLMs may flag 'refurbished' as requiring a different code or may incorrectly apply used-goods subheadings when classification is identical to new."
+  }
+]
