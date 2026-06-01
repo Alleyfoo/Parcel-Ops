@@ -1483,7 +1483,7 @@ def render_llm_showcase() -> None:
 
     with col_model:
         model_options = list(DEFAULT_GEMINI_MODELS)
-        current_model = overrides.get("model", "gemini-2.0-flash")
+        current_model = overrides.get("model", "gemini-2.5-flash")
         if current_model not in model_options:
             model_options = [current_model] + model_options
         new_model = st.selectbox(

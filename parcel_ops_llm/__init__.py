@@ -22,10 +22,12 @@ from typing import Optional
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
 
-# Free-tier friendly defaults. Models are presented in display order.
+# Free-tier friendly defaults. gemini-2.5-flash is the default: earlier
+# in testing it returned cleaner JSON than 2.0-flash when response_format
+# is honoured. Models are presented in display order.
 DEFAULT_GEMINI_MODELS = [
-    "gemini-2.0-flash",
     "gemini-2.5-flash",
+    "gemini-2.0-flash",
     "gemini-1.5-flash",
     "gemini-1.5-flash-8b",
     "gemini-1.5-pro",
@@ -35,7 +37,8 @@ SYSTEM_PROMPT = (
     "You are a customs classification assistant for the EU Combined Nomenclature. "
     "Given a product description and optional context, classify the product into a "
     "6-digit Harmonized System (HS) code. Apply the General Rules of Interpretation (GRI). "
-    "Respond ONLY with a single JSON object in this exact shape, no prose, no markdown:\n"
+    "You MUST respond with a single JSON object — no prose before, no prose after, no "
+    "markdown code fences, no commentary. The JSON object must have exactly these fields:\n"
     '{"hs_code": "NNNN.NN", "confidence": 0.0-1.0, "reasoning": "<one short paragraph>"}\n'
     "Be precise: only return an HS code you can defend. If you are guessing, lower the confidence."
 )
@@ -77,7 +80,7 @@ def load_llm_config(
 
     model = (
         os.environ.get("LLM_MODEL")
-        or overrides.get("model", "gemini-2.0-flash")
+        or overrides.get("model", "gemini-2.5-flash")
     )
 
     if provider == "gemini":
@@ -124,6 +127,12 @@ def chat_completion(
         ],
         "temperature": 0.1,
         "max_tokens": 400,
+        # Gemini's OpenAI-compat endpoint supports response_format for
+        # constrained JSON output. Some models (notably the "thinking"
+        # tier like 2.5-flash) otherwise emit prose + JSON-with-bugs
+        # which is hard to parse robustly. Falls back gracefully if
+        # the provider does not honour it.
+        "response_format": {"type": "json_object"},
     }
 
     data = json.dumps(payload).encode("utf-8")
@@ -162,6 +171,29 @@ def chat_completion(
 # HS classification call
 # ---------------------------------------------------------------------------
 
+def _sanitize_llm_json(text: str) -> str:
+    """Lightly clean common LLM JSON mistakes.
+
+    Handles: BOM, smart quotes, trailing commas before } or ].
+    Does NOT try to fix unquoted keys or single-quoted strings — those
+    are too ambiguous. If the model emits those, the parser will fail
+    and the user will see the raw response in the UI.
+    """
+    if not text:
+        return text
+    # Strip BOM
+    if text.startswith("﻿"):
+        text = text[1:]
+    # Replace smart double quotes with regular
+    text = text.replace("“", '"').replace("”", '"')
+    # Replace smart single quotes with regular (use as string quotes — fragile)
+    text = text.replace("‘", "'").replace("’", "'")
+    # Drop trailing commas before } or ]
+    import re
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+    return text
+
+
 def _strip_markdown_fences(text: str) -> str:
     """Strip ```json ... ``` fences if present. Robust to leading language tag."""
     text = text.strip()
@@ -185,7 +217,7 @@ def _extract_json_object(text: str) -> dict | None:
       1. The whole text as JSON
       2. The first {...} block where braces balance
     """
-    candidates = [text]
+    candidates = [text, _sanitize_llm_json(text)]
     # Greedy outer-brace extraction: find the first { and the matching }
     start = text.find("{")
     if start != -1:
@@ -209,7 +241,9 @@ def _extract_json_object(text: str) -> dict | None:
             elif ch == "}":
                 depth -= 1
                 if depth == 0:
-                    candidates.append(text[start:i + 1])
+                    sub = text[start:i + 1]
+                    candidates.append(sub)
+                    candidates.append(_sanitize_llm_json(sub))
                     break
     for c in candidates:
         c = c.strip()
