@@ -1401,6 +1401,21 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
 # LLM Showcase
 # ---------------------------------------------------------------------------
 
+def _ollama_server_reachable(base_url: str = "http://127.0.0.1:11434/v1") -> bool:
+    """Cheap TCP-ish reachability check against the local ollama server.
+
+    Used by the LLM config card to surface a "start ollama serve" hint
+    without burning a /v1/models call. Returns False on any error.
+    """
+    try:
+        from urllib.request import urlopen
+        from urllib.error import URLError
+        with urlopen(f"{base_url.rstrip('/')}/models", timeout=2) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
 def render_llm_showcase() -> None:
     """LLM vs Regex HS classification showcase with live Gemini calls.
 
@@ -1446,6 +1461,8 @@ def render_llm_showcase() -> None:
     )
     from parcel_ops_llm import (
         DEFAULT_GEMINI_MODELS,
+        DEFAULT_OLLAMA_MODELS,
+        list_models,
         load_llm_config,
         probe_connection,
     )
@@ -1468,27 +1485,91 @@ def render_llm_showcase() -> None:
       <div class="pipeline-body" style="padding-top:8px;">
     """)
 
-    col_key, col_model, col_probe = st.columns([3, 2, 1])
-
-    with col_key:
-        new_key = st.text_input(
-            "Gemini API key",
-            value=overrides.get("api_key", ""),
-            type="password",
-            help="Free-tier key from aistudio.google.com. Stored in session only — never written to disk.",
-            key="llm_api_key_input",
-        )
-        if new_key != overrides.get("api_key", ""):
-            overrides["api_key"] = new_key
+    # Provider toggle. Big, two-button choice because the rest of the
+    # card changes shape depending on which one is active.
+    col_prov_g, col_prov_o = st.columns(2)
+    with col_prov_g:
+        gemini_active = cfg_now.provider == "gemini"
+        if st.button(
+            "☁  Gemini (cloud, free tier)",
+            type="primary" if gemini_active else "secondary",
+            use_container_width=True,
+            disabled=gemini_active,
+        ):
+            overrides["provider"] = "gemini"
+            overrides.pop("base_url", None)
             st.session_state["_llm_overrides"] = overrides
             st.session_state.pop("llm_probe_result", None)
+            st.session_state.pop("llm_model_list", None)
+            st.rerun()
+    with col_prov_o:
+        ollama_active = cfg_now.provider == "ollama"
+        if st.button(
+            "🖥  Ollama (local, no API key)",
+            type="primary" if ollama_active else "secondary",
+            use_container_width=True,
+            disabled=ollama_active,
+        ):
+            overrides["provider"] = "ollama"
+            overrides.pop("api_key", None)
+            st.session_state["_llm_overrides"] = overrides
+            st.session_state.pop("llm_probe_result", None)
+            st.session_state.pop("llm_model_list", None)
             st.rerun()
 
-    with col_model:
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    # Provider-specific fields: API key (gemini) or base URL (ollama).
+    if cfg_now.provider == "ollama":
+        col_url, col_model, col_probe = st.columns([3, 2, 1])
+        with col_url:
+            new_url = st.text_input(
+                "Ollama base URL",
+                value=overrides.get("base_url", "http://127.0.0.1:11434/v1"),
+                help="OpenAI-compat endpoint. Default: local ollama on port 11434.",
+                key="llm_ollama_url_input",
+            )
+            if new_url != overrides.get("base_url", "http://127.0.0.1:11434/v1"):
+                overrides["base_url"] = new_url
+                st.session_state["_llm_overrides"] = overrides
+                st.session_state.pop("llm_probe_result", None)
+                st.session_state.pop("llm_model_list", None)
+                st.rerun()
+    else:
+        col_key, col_model, col_probe = st.columns([3, 2, 1])
+        with col_key:
+            new_key = st.text_input(
+                "Gemini API key",
+                value=overrides.get("api_key", ""),
+                type="password",
+                help="Free-tier key from aistudio.google.com. Stored in session only — never written to disk.",
+                key="llm_api_key_input",
+            )
+            if new_key != overrides.get("api_key", ""):
+                overrides["api_key"] = new_key
+                st.session_state["_llm_overrides"] = overrides
+                st.session_state.pop("llm_probe_result", None)
+                st.rerun()
+
+    # Model dropdown. For ollama we hit /v1/models live so the user sees
+    # what they actually have pulled. For gemini we use the curated list
+    # (free-tier friendly defaults). Both fall back to a hardcoded list
+    # when the live call fails.
+    if cfg_now.provider == "ollama":
+        # Cache the live model list per session; refresh on provider
+        # change (handled by the llm_model_list pop above).
+        if "llm_model_list" not in st.session_state:
+            st.session_state["llm_model_list"] = list_models(cfg_now)
+        model_options = list(st.session_state["llm_model_list"])
+    else:
         model_options = list(DEFAULT_GEMINI_MODELS)
-        current_model = overrides.get("model", "gemini-2.5-flash")
-        if current_model not in model_options:
-            model_options = [current_model] + model_options
+
+    default_model = "llama3.2:latest" if cfg_now.provider == "ollama" else "gemini-2.5-flash"
+    current_model = overrides.get("model", default_model)
+    if current_model not in model_options:
+        model_options = [current_model] + model_options
+
+    with col_model:
         new_model = st.selectbox(
             "Model",
             model_options,
@@ -1501,6 +1582,14 @@ def render_llm_showcase() -> None:
             st.session_state.pop("llm_probe_result", None)
             st.rerun()
 
+    # Optional manual refresh for the ollama model list (the user just
+    # ran `ollama pull llama3.3` and wants the new model in the dropdown
+    # without restarting the tab).
+    if cfg_now.provider == "ollama":
+        if st.button("↻ Refresh ollama model list", key="llm_refresh_models"):
+            st.session_state.pop("llm_model_list", None)
+            st.rerun()
+
     with col_probe:
         st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
         probe_clicked = st.button("Test connection", use_container_width=True)
@@ -1508,7 +1597,7 @@ def render_llm_showcase() -> None:
     # Probe result with 5-min cache
     if probe_clicked or "llm_probe_result" not in st.session_state:
         if probe_clicked:
-            with st.spinner("Probing Gemini…"):
+            with st.spinner(f"Probing {cfg_now.provider}…"):
                 ok, msg = probe_connection(cfg_now)
             st.session_state["llm_probe_result"] = (ok, msg, __import__("time").time())
 
@@ -1516,11 +1605,17 @@ def render_llm_showcase() -> None:
     if probe:
         ok, msg, _ = probe
         if ok:
-            st.success(f"Connected to {cfg_now.model} — {msg}")
+            st.success(f"Connected to {cfg_now.provider}/{cfg_now.model} — {msg}")
         else:
             st.warning(f"Probe: {msg}")
 
-    if not cfg_now.api_key:
+    if cfg_now.provider == "ollama":
+        if not _ollama_server_reachable(cfg_now.base_url):
+            st.caption(
+                "⚠ Ollama server not reachable at the configured URL. "
+                "Start it with `ollama serve` (or check the base URL above)."
+            )
+    elif not cfg_now.api_key:
         st.caption(
             "No API key configured. LLM column will show placeholders. "
             "Set GEMINI_API_KEY env var, or enter a key above."
@@ -1623,22 +1718,37 @@ def render_llm_showcase() -> None:
     # and mark remaining cases as rate-limited rather than failing them.
     _RUN_PACE_SECONDS = 13.0
 
+    # A "run" is enabled whenever the provider is in a state that can
+    # actually serve requests: ollama just needs the server up, gemini
+    # needs an API key.
+    run_enabled = bool(cfg_now.api_key) or cfg_now.provider == "ollama"
+    run_help = (
+        f"Calls {cfg_now.provider.title()} once per test case"
+        + (
+            f", paced at {_RUN_PACE_SECONDS:.0f}s to stay under the free-tier 5 RPM limit. "
+            if cfg_now.provider == "gemini"
+            else " — local ollama, no rate limit, ~3s/case. "
+        )
+        + "For 12 cases this takes "
+        + ("~3 minutes." if cfg_now.provider == "gemini" else "~30 seconds.")
+    )
+
     run_col, _ = st.columns([1, 3])
     with run_col:
         run_clicked = st.button(
             "Run LLM on all cases",
             type="primary",
             use_container_width=True,
-            disabled=not cfg_now.api_key,
-            help=(
-                f"Calls Gemini once per test case, paced at {_RUN_PACE_SECONDS:.0f}s "
-                f"to stay under the free-tier 5 RPM limit. For 12 cases this takes ~3 minutes."
-            ),
+            disabled=not run_enabled,
+            help=run_help,
         )
 
-    if run_clicked and cfg_now.api_key:
+    if run_clicked and run_enabled:
         import time as _time
         from llm_classifier import ClassificationResult
+        # Pacing only matters for the gemini free tier. Ollama is local —
+        # we just send the next call as soon as the previous one returns.
+        pace = _RUN_PACE_SECONDS if cfg_now.provider == "gemini" else 0.0
         results = []
         progress = st.progress(0.0, text="Starting…")
         eta_text = st.empty()
@@ -1664,9 +1774,10 @@ def render_llm_showcase() -> None:
                     (i - 1) / n,
                     text=f"Case {i}/{n}: {case['description'][:50]}…",
                 )
-                eta_text.caption(
-                    f"ETA ~{int((n - i + 1) * _RUN_PACE_SECONDS / 60)} min — pacing {_RUN_PACE_SECONDS:.0f}s between calls."
-                )
+                if pace > 0:
+                    eta_text.caption(
+                        f"ETA ~{int((n - i + 1) * pace / 60)} min — pacing {pace:.0f}s between calls."
+                    )
                 with st.spinner(f"Case {i}/{n}: {case['description'][:60]}…"):
                     llm_res = classify_with_llm(case["description"], case.get("context", ""))
 
@@ -1684,9 +1795,9 @@ def render_llm_showcase() -> None:
 
             # Pace: sleep between calls (skip after the last one, and
             # skip if we just got rate-limited — no point waiting).
-            if i < n and not hit_rate_limit:
+            if i < n and not hit_rate_limit and pace > 0:
                 elapsed = _time.perf_counter() - case_start
-                sleep_for = max(0.0, _RUN_PACE_SECONDS - elapsed)
+                sleep_for = max(0.0, pace - elapsed)
                 if sleep_for > 0:
                     _time.sleep(sleep_for)
         progress.progress(1.0, text="Done.")
@@ -1708,9 +1819,10 @@ def render_llm_showcase() -> None:
 
     if results is None:
         st.info(
-            "No saved baseline found. Click **Run LLM on all cases** to call Gemini, "
-            "or load the test fixtures below. The LLM column will populate with real "
-            "model output and accuracy stats will be computed from the gold HS codes."
+            f"No saved baseline found. Click **Run LLM on all cases** to call "
+            f"{cfg_now.provider.title()}, or load the test fixtures below. The LLM "
+            f"column will populate with real model output and accuracy stats will be "
+            f"computed from the gold HS codes."
         )
         # Pre-fill with regex scores + no-key LLM placeholders so the per-case
         # expanders below are still meaningful (you can read every gold
@@ -1747,15 +1859,16 @@ def render_llm_showcase() -> None:
                 run_this = st.button(
                     "Run LLM on this case",
                     key=f"run_case_{i}",
-                    disabled=not cfg_now.api_key,
+                    disabled=not run_enabled,
                     use_container_width=True,
                     help=(
-                        "Calls Gemini once for this case and updates the LLM column in place. "
-                        "Useful for retrying a rate-limited case without re-running the whole batch."
+                        f"Calls {cfg_now.provider.title()} once for this case and updates "
+                        f"the LLM column in place. Useful for retrying a rate-limited case "
+                        f"without re-running the whole batch."
                     ),
                 )
 
-            if run_this and cfg_now.api_key:
+            if run_this and run_enabled:
                 with st.spinner(f"Calling Gemini for case {i}…"):
                     llm_res = classify_with_llm(r["description"], case_meta.get("context", "") if case_meta else "")
                 # build_evald() rebuilds the per-case evald from the case
