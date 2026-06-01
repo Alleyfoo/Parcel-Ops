@@ -1470,6 +1470,7 @@ def render_llm_showcase() -> None:
         from parcel_ops_llm import (
             DEFAULT_GEMINI_MODELS,
             DEFAULT_OLLAMA_MODELS,
+            SYSTEM_PROMPT,
             list_models,
             load_llm_config,
             probe_connection,
@@ -1887,6 +1888,23 @@ def render_llm_showcase() -> None:
                 ctx = case_meta.get("context", "") if case_meta else ""
                 st.info(ctx)
 
+            # Copy-prompt affordance. The block mirrors what the LLM
+            # client actually sends (system + user message) so visitors
+            # can paste it straight into ChatGPT/Claude/Gemini and verify
+            # the high-tier reference column themselves.
+            ctx = case_meta.get("context", "") if case_meta else ""
+            user_prompt = f"Description: {r['description']}"
+            if ctx:
+                user_prompt += f"\nContext: {ctx}"
+            user_prompt += "\n\nReturn the JSON object only."
+            full_prompt = f"{SYSTEM_PROMPT}\n\n{user_prompt}"
+            with st.expander("Copy prompt to test in another model", expanded=False):
+                st.caption(
+                    "This is the exact system + user prompt the LLM client sends "
+                    "for this case. Hover the code block and click the copy icon "
+                    "(top-right) to paste it into ChatGPT, Claude, or Gemini."
+                )
+                st.code(full_prompt, language="text")
             # Per-case run button: lets the user run a single case against
             # the LLM without pacing through the full batch (useful for
             # retrying a 429 or skipping ahead when the free tier is busy).
