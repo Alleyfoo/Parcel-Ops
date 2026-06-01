@@ -298,6 +298,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 _SAVED_PATH = Path(__file__).parent / "llm_saved_results.json"
+_TIER_A_PATH = Path(__file__).parent / "tier_a_results.json"
 
 
 def build_evald(case: dict, llm_res: ClassificationResult) -> dict:
@@ -386,3 +387,84 @@ def save_results(
         json.dump(payload, f, indent=2, ensure_ascii=False)
     os.replace(tmp, target)
     return target
+
+
+# ---------------------------------------------------------------------------
+# Tier-A (high-tier LLM reference) baseline
+# ---------------------------------------------------------------------------
+#
+# The 12 cases are also hand-classified as a reference column. The intent is
+# to show what a higher-tier API LLM (GPT-4-class / Claude-class) would
+# return, so visitors can see the gap between a 10GB local model and a
+# state-of-the-art API model without needing an API key.
+#
+# tier_a_results.json holds the answers; it's loaded once and merged into
+# the per-case rows by `attach_tier_a()` below. The data is hand-curated
+# and ships in the repo — there's no runtime regeneration.
+
+
+def load_tier_a_results() -> Optional[dict[str, Any]]:
+    """Load the high-tier reference baseline from disk.
+
+    Returns None if the file is missing or malformed.
+    """
+    if not _TIER_A_PATH.exists():
+        return None
+    try:
+        with _TIER_A_PATH.open("r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict) or "results" not in payload:
+        return None
+    if not isinstance(payload["results"], list):
+        return None
+    return payload
+
+
+def attach_tier_a(results: list[dict], tier_a: Optional[dict] = None) -> list[dict]:
+    """Merge a `tier_a_result` field into each row of `results`.
+
+    The merged result has the shape {hs_code, confidence, reasoning,
+    correct, model}. Missing cases get a placeholder row so the UI can
+    always render the column without conditional layout.
+
+    Returns the same list (mutated in place) for convenience.
+    """
+    if tier_a is None:
+        tier_a = load_tier_a_results()
+    label = (tier_a or {}).get("model_label") or (tier_a or {}).get("model") or "high-tier"
+    by_id = {r.get("case_id"): r for r in (tier_a or {}).get("results", [])}
+    for r in results:
+        cid = r.get("case_id")
+        gold = r.get("gold_hs_code", "")
+        src = by_id.get(cid)
+        if src is None:
+            r["tier_a_result"] = {
+                "hs_code": "—",
+                "confidence": 0.0,
+                "reasoning": "No reference answer recorded for this case.",
+                "correct": False,
+                "model": label,
+            }
+            r["tier_a_correct"] = False
+            continue
+        hs = str(src.get("hs_code", "—"))
+        correct = hs == gold and hs != "—"
+        r["tier_a_result"] = {
+            "hs_code": hs,
+            "confidence": float(src.get("confidence", 0.0)),
+            "reasoning": str(src.get("reasoning", "")).strip(),
+            "correct": correct,
+            "model": label,
+        }
+        r["tier_a_correct"] = correct
+    return results
+
+
+def tier_a_accuracy(results: list[dict]) -> float:
+    """Share of rows where the tier-A reference matches gold. 0.0 on empty input."""
+    if not results:
+        return 0.0
+    correct = sum(1 for r in results if r.get("tier_a_correct"))
+    return correct / len(results)

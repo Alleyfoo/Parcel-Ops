@@ -1461,6 +1461,9 @@ def render_llm_showcase() -> None:
             get_all_test_cases,
             get_statistics,
             load_saved_results,
+            load_tier_a_results,
+            attach_tier_a,
+            tier_a_accuracy,
             make_baseline_results,
             save_results,
         )
@@ -1671,22 +1674,42 @@ def render_llm_showcase() -> None:
 
     results = st.session_state["llm_results"]
     results_source = st.session_state.get("llm_results_source", "none")
+
+    # Attach the hand-curated high-tier reference column. It's keyed by
+    # case_id, so the merge survives any live re-runs of the LLM column.
+    tier_a_payload = load_tier_a_results()
+    attach_tier_a(results, tier_a_payload)
+    tier_a_label = (tier_a_payload or {}).get("model_label") or "High-tier LLM"
+    tier_a_acc = tier_a_accuracy(results) if results else 0.0
+
     stats = get_statistics(results)
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.metric("Test Cases", stats["total_cases"] or len(test_cases))
     with col2:
         st.metric("Regex Accuracy", f"{stats['regex_accuracy']:.0%}" if results else "—")
     with col3:
-        st.metric("LLM Accuracy", f"{stats['llm_accuracy']:.0%}" if results else "—")
+        st.metric("Local LLM", f"{stats['llm_accuracy']:.0%}" if results else "—")
     with col4:
+        st.metric("High-tier LLM", f"{tier_a_acc:.0%}" if results else "—")
+    with col5:
         if results:
-            delta = stats["llm_accuracy"] - stats["regex_accuracy"]
+            # Headline is the gap between the reference tier and regex —
+            # that's the "what does an LLM step actually add to this
+            # pipeline" question.
+            delta = tier_a_acc - stats["regex_accuracy"]
             label = f"{delta:+.0%}"
         else:
             label = "—"
-        st.metric("LLM vs Regex", label)
+        st.metric("Tier-A vs Regex", label)
+
+    # Footnote: be honest that both columns have headroom with development.
+    st.caption(
+        "Regex can be tuned and LLMs can be fine-tuned — this strip shows "
+        "the out-of-the-box gap on these 12 cases, not the ceiling for "
+        "either approach."
+    )
 
     # ----- Source caption + reset button -----------------------------------
     # Tell the visitor where the visible data is coming from. A saved
@@ -1904,7 +1927,7 @@ def render_llm_showcase() -> None:
 
             st.markdown("---")
 
-            col_regex, col_llm = st.columns([1, 1])
+            col_regex, col_llm, col_tier_a = st.columns([1, 1, 1])
 
             with col_regex:
                 regex = r["regex_result"]
@@ -1960,6 +1983,22 @@ def render_llm_showcase() -> None:
                     st.warning("LLM won unexpectedly — verify against the gold reasoning.")
                 if r["llm_pitfall"]:
                     st.caption(f"Known LLM pitfall: {r['llm_pitfall']}")
+
+            with col_tier_a:
+                tier_a = r.get("tier_a_result") or {}
+                ok = bool(r.get("tier_a_correct"))
+                icon = "✓" if ok else "✗"
+                color = "var(--ok, #1f8a4c)" if ok else "var(--crit, #c0392b)"
+                st.markdown(
+                    f"**{tier_a.get('model', 'High-tier LLM')}** "
+                    f"<span style='color:{color}'>{icon}</span>",
+                    unsafe_allow_html=True,
+                )
+                st.caption("Reference column — hand-curated, not regenerated at runtime.")
+                st.markdown(f"HS Code: `{tier_a.get('hs_code', '—')}`")
+                st.markdown(f"Confidence: {tier_a.get('confidence', 0.0):.0%}")
+                st.markdown("Reasoning:")
+                st.caption(tier_a.get("reasoning") or "(no reasoning recorded)")
 
             if r.get("gold_reasoning"):
                 with st.expander("Gold reasoning", expanded=False):

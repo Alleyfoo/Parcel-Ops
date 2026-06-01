@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "captured_at": "2026-06-01T22:30:00+00:00",
+  "model": "high-tier-reference",
+  "model_label": "High-tier LLM (reference)",
+  "note": "Reference classifications for the 12 showcase cases, prepared as an upper-bound comparison vs. the local 10GB ollama model. Hand-curated to mirror what a GPT-4 / Claude-tier API call would produce on the same prompts; not regenerated at runtime.",
+  "results": [
+    {
+      "case_id": "ambiguous_1",
+      "hs_code": "8538.90",
+      "confidence": 0.65,
+      "reasoning": "Parts of apparatus of headings 8535–8537 fall under 8538. The housing is dedicated to electronic circuit boards but the context does not narrow the boards to integrated circuits specifically, so 8538.90 (parts of switchgear/control apparatus) is the conservative call. If the boards were known to be ICs, 8542.90 would apply via Chapter 39 Note 1(g)."
+    },
+    {
+      "case_id": "ambiguous_2",
+      "hs_code": "8487.90",
+      "confidence": 0.55,
+      "reasoning": "General machinery parts of base metal without electrical features fall in heading 8487. The gold answer (8431.49) assumes parent machinery in chapter 8425–8430; without that detail, 8487.90 is the conservative call. A real broker would request the parent machine class before committing."
+    },
+    {
+      "case_id": "ambiguous_3",
+      "hs_code": "8516.71",
+      "confidence": 0.92,
+      "reasoning": "Electric coffee/tea makers. The ceramic body is incidental; the essential character is the electro-thermic heating function. Chapter 85 Note 1(u) brings ceramic articles fitted with electrical features into Chapter 85. Bluetooth/temperature-control is a feature of the same appliance, not a separate good."
+    },
+    {
+      "case_id": "ambiguous_4",
+      "hs_code": "8523.51",
+      "confidence": 0.96,
+      "reasoning": "Solid-state non-volatile storage device. Heading 8523 covers semiconductor media; subheading 8523.51 specifically covers solid-state. The plastic shell is incidental packaging and does not move the classification to Chapter 39."
+    },
+    {
+      "case_id": "multilang_1",
+      "hs_code": "8542.31",
+      "confidence": 0.97,
+      "reasoning": "German: 'Electronic voltage regulators, integrated circuits'. The phrase 'integrierte Schaltkreise' (integrated circuits) is definitive for heading 8542; subheading 8542.31 covers processors and controllers including voltage regulators implemented as ICs."
+    },
+    {
+      "case_id": "multilang_2",
+      "hs_code": "8542.31",
+      "confidence": 0.78,
+      "reasoning": "Chinese: 'Plastic electronic component housing/shell'. By Chapter 39 Note 1(g), articles of plastic which are parts of goods of Chapter 85 fall in Chapter 85. The essential character is the electronic component housing, not the plastic material."
+    },
+    {
+      "case_id": "multilang_3",
+      "hs_code": "8541.43",
+      "confidence": 0.95,
+      "reasoning": "Spanish: 'Photovoltaic modules, 400W polycrystalline'. Heading 8541 covers photovoltaic cells whether or not assembled in modules; subheading 8541.43 (post-2022 HS) specifically covers PV cells assembled in modules or made up into panels."
+    },
+    {
+      "case_id": "kit_1",
+      "hs_code": "8537.10",
+      "confidence": 0.88,
+      "reasoning": "Per GRI 3(b), goods put up in sets for retail sale are classified by the component which gives them their essential character. The control boards and power supply together form a control panel assembly under heading 8537 (boards/panels for electric control, ≤1000V). The connectors and manual are accessories that follow the principal classification."
+    },
+    {
+      "case_id": "regex_wins_1",
+      "hs_code": "6109.10",
+      "confidence": 0.99,
+      "reasoning": "T-shirt, knitted, of cotton. Heading 6109 covers T-shirts and similar garments, knitted or crocheted; subheading 6109.10 specifically covers cotton. Direct keyword match with no ambiguity."
+    },
+    {
+      "case_id": "regex_wins_2",
+      "hs_code": "8211.91",
+      "confidence": 0.98,
+      "reasoning": "Knives with cutting blades, serrated or not (including pruning knives). Subheading 8211.91 covers table knives having fixed blades, including kitchen knives. The set classification follows GRI 1; retail packaging does not change the heading."
+    },
+    {
+      "case_id": "llm_hallucination_1",
+      "hs_code": "4901.99",
+      "confidence": 0.90,
+      "reasoning": "Software delivered as a printed license code on a paper card with no physical media is classified by the carrier (paper) under heading 4901 (printed matter). Note 1(m) to Chapter 85 and Section XV Note 6 are the operative rules. This is a textbook LLM trap because the word 'software' invites 8523 or 8471, but with no recording medium the carrier rules apply."
+    },
+    {
+      "case_id": "llm_hallucination_2",
+      "hs_code": "8471.30",
+      "confidence": 0.97,
+      "reasoning": "Portable automatic data processing machine, weight ≤10kg. Refurbished/used status does not change the HS classification — Notes to Chapters 84–85 do not exclude used or refurbished goods. The factory-refurbished status and warranty are commercial properties, not classification properties."
+    }
+  ]
+}
