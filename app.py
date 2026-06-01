@@ -1664,6 +1664,11 @@ def render_llm_showcase() -> None:
                 st.markdown(f"Confidence: {llm['confidence']:.0%}")
                 st.markdown("Reasoning:")
                 st.caption(llm["reasoning"] or "(no reasoning returned)")
+                if llm.get("error"):
+                    st.error(llm["error"])
+                if llm.get("raw"):
+                    with st.expander("Raw model response (debug)", expanded=False):
+                        st.code(llm["raw"], language="text")
                 if r["expected_winner"] == "llm" and r["llm_correct"]:
                     st.success("LLM correct, regex wrong — LLM wins this case.")
                 if r["expected_winner"] == "regex" and r["llm_correct"] and not r["regex_correct"]:

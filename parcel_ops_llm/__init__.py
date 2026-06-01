@@ -162,6 +162,68 @@ def chat_completion(
 # HS classification call
 # ---------------------------------------------------------------------------
 
+def _strip_markdown_fences(text: str) -> str:
+    """Strip ```json ... ``` fences if present. Robust to leading language tag."""
+    text = text.strip()
+    if not text.startswith("```"):
+        return text
+    # Drop the opening fence (with optional language tag like ```json)
+    body = text[3:].lstrip()
+    if body.lower().startswith("json"):
+        body = body[4:].lstrip()
+    # Drop the closing fence
+    if body.endswith("```"):
+        body = body[:-3].rstrip()
+    return body
+
+
+def _extract_json_object(text: str) -> dict | None:
+    """Try to find and parse a JSON object embedded in the text.
+
+    Returns the parsed dict, or None if no parseable object was found.
+    Tries, in order:
+      1. The whole text as JSON
+      2. The first {...} block where braces balance
+    """
+    candidates = [text]
+    # Greedy outer-brace extraction: find the first { and the matching }
+    start = text.find("{")
+    if start != -1:
+        depth = 0
+        in_str = False
+        escape = False
+        for i, ch in enumerate(text[start:], start=start):
+            if escape:
+                escape = False
+                continue
+            if ch == "\\":
+                escape = True
+                continue
+            if ch == '"':
+                in_str = not in_str
+                continue
+            if in_str:
+                continue
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    candidates.append(text[start:i + 1])
+                    break
+    for c in candidates:
+        c = c.strip()
+        if not c:
+            continue
+        try:
+            obj = json.loads(c)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict):
+            return obj
+    return None
+
+
 def classify_hs_code(
     cfg: LLMConfig,
     description: str,
@@ -171,7 +233,7 @@ def classify_hs_code(
 
     Returns (parsed_json, latency_seconds). The parsed JSON has the shape
     {"hs_code": str, "confidence": float, "reasoning": str} or
-    {"error": str} if the model did not return parseable JSON.
+    {"error": str, "raw": str} if the model did not return parseable JSON.
     """
     user_prompt = f"Description: {description}"
     if context:
@@ -185,40 +247,27 @@ def classify_hs_code(
     try:
         content = raw["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as e:
-        return ({"error": f"Unexpected response shape: {raw!r}"}, latency)
+        return ({"error": f"Unexpected response shape: {raw!r}", "raw": str(raw)[:500]}, latency)
 
-    # Strip markdown fences if present, then try to find a JSON object
-    text = content.strip()
-    if text.startswith("```"):
-        text = text.strip("`")
-        if "\n" in text:
-            text = text.split("\n", 1)[1]
-        if text.endswith("```"):
-            text = text[:-3]
-        text = text.strip()
+    text = _strip_markdown_fences(content)
+    parsed = _extract_json_object(text)
 
-    try:
-        parsed = json.loads(text)
-    except json.JSONDecodeError:
-        # Try to extract a JSON object from the text
-        start = text.find("{")
-        end = text.rfind("}")
-        if start != -1 and end > start:
-            try:
-                parsed = json.loads(text[start:end + 1])
-            except json.JSONDecodeError:
-                return ({"error": f"Model did not return JSON: {text[:200]}"}, latency)
-        else:
-            return ({"error": f"Model did not return JSON: {text[:200]}"}, latency)
+    if parsed is None:
+        # Show enough of the raw text in the error for debugging,
+        # but cap it so the UI doesn't blow up on huge responses.
+        return (
+            {"error": f"Model did not return JSON: {text[:200]}", "raw": text[:1000]},
+            latency,
+        )
 
-    # Validate
-    if not isinstance(parsed, dict) or "hs_code" not in parsed:
-        return ({"error": f"Missing hs_code field: {parsed!r}"}, latency)
+    if "hs_code" not in parsed:
+        return (
+            {"error": f"Missing hs_code field: {parsed!r}", "raw": text[:1000]},
+            latency,
+        )
 
-    # Normalize confidence if missing
     parsed.setdefault("confidence", 0.5)
     parsed.setdefault("reasoning", "")
-
     return (parsed, latency)
 
 
