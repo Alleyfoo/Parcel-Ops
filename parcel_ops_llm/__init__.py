@@ -289,14 +289,28 @@ def classify_hs_code(
     if parsed is None:
         # Show enough of the raw text in the error for debugging,
         # but cap it so the UI doesn't blow up on huge responses.
+        # Include the length so the next debug session can tell at a
+        # glance whether the response was truncated, wrapped, etc.
+        snippet = text[:600]
+        # Also write the full text to stderr so it shows up in the
+        # Streamlit Cloud logs even if the user can't see the UI raw
+        # expander. Helps diagnose format bugs without re-running.
+        import sys
+        print(
+            f"[parcel_ops_llm] parse_failed: len={len(text)} repr={text!r}",
+            file=sys.stderr,
+        )
         return (
-            {"error": f"Model did not return JSON: {text[:200]}", "raw": text[:1000]},
+            {
+                "error": f"Model did not return JSON (len={len(text)}): {snippet}",
+                "raw": text[:2000],
+            },
             latency,
         )
 
     if "hs_code" not in parsed:
         return (
-            {"error": f"Missing hs_code field: {parsed!r}", "raw": text[:1000]},
+            {"error": f"Missing hs_code field: {parsed!r}", "raw": text[:2000]},
             latency,
         )
 

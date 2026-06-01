@@ -1667,7 +1667,7 @@ def render_llm_showcase() -> None:
                 if llm.get("error"):
                     st.error(llm["error"])
                 if llm.get("raw"):
-                    with st.expander("Raw model response (debug)", expanded=False):
+                    with st.expander("Raw model response (debug)", expanded=bool(llm.get("error"))):
                         st.code(llm["raw"], language="text")
                 if r["expected_winner"] == "llm" and r["llm_correct"]:
                     st.success("LLM correct, regex wrong — LLM wins this case.")
