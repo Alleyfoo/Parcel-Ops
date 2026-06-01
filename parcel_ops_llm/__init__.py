@@ -21,6 +21,7 @@ from typing import Optional
 # ---------------------------------------------------------------------------
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
+OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1"
 
 # Free-tier friendly defaults. gemini-2.5-flash is the default: earlier
 # in testing it returned cleaner JSON than 2.0-flash when response_format
@@ -31,6 +32,19 @@ DEFAULT_GEMINI_MODELS = [
     "gemini-1.5-flash",
     "gemini-1.5-flash-8b",
     "gemini-1.5-pro",
+]
+
+# Ollama defaults. The model list is dynamic — `load_llm_config()` queries
+# the live /v1/models endpoint and falls back to these when the server
+# isn't reachable (so the UI still has *something* to populate the
+# dropdown with).
+DEFAULT_OLLAMA_MODELS = [
+    "llama3.2:latest",
+    "llama3.1:8b",
+    "qwen3.5:9b",
+    "gemma4:latest",
+    "codestral:latest",
+    "devstral:latest",
 ]
 
 SYSTEM_PROMPT = (
@@ -60,16 +74,23 @@ def load_llm_config(
     """Resolve LLM config with precedence: env > session > secrets > defaults.
 
     Precedence matches the sql-editor project so the UX is familiar.
+
+    Provider is "gemini" (default, cloud, needs an API key) or "ollama"
+    (local, talks to http://127.0.0.1:11434/v1, no key required).
     """
     overrides = session_overrides or {}
     sec = secrets or {}
 
-    # API key precedence
+    # API key precedence. Ollama doesn't need a key, but the client still
+    # sends a Bearer header; we just don't *require* one. Gemini and any
+    # other OpenAI-compat provider do require it.
     api_key = (
         os.environ.get("GEMINI_API_KEY")
+        or os.environ.get("OLLAMA_API_KEY")
         or os.environ.get("LLM_API_KEY")
         or overrides.get("api_key", "")
         or (sec.get("GEMINI_API_KEY") if isinstance(sec, dict) else "")
+        or (sec.get("OLLAMA_API_KEY") if isinstance(sec, dict) else "")
         or ""
     )
 
@@ -78,15 +99,28 @@ def load_llm_config(
         or overrides.get("provider", "gemini")
     )
 
+    # Default model is provider-specific. Ollama has many tags (`:latest`,
+    # `:8b`, etc) so the dashboard usually overrides this.
+    default_model = "llama3.2:latest" if provider == "ollama" else "gemini-2.5-flash"
     model = (
         os.environ.get("LLM_MODEL")
-        or overrides.get("model", "gemini-2.5-flash")
+        or overrides.get("model", default_model)
     )
 
-    if provider == "gemini":
+    # Base URL per provider. Env override wins so power users can point
+    # at a remote ollama or a different Gemini proxy.
+    if provider == "ollama":
+        base_url = os.environ.get("OLLAMA_BASE_URL") or OLLAMA_BASE_URL
+        if overrides.get("base_url"):
+            base_url = overrides["base_url"]
+    elif provider == "gemini":
         base_url = GEMINI_BASE_URL
+        if overrides.get("base_url"):
+            base_url = overrides["base_url"]
     else:
         base_url = os.environ.get("OPENAI_BASE_URL") or "https://api.openai.com/v1"
+        if overrides.get("base_url"):
+            base_url = overrides["base_url"]
 
     return LLMConfig(
         provider=provider,
@@ -94,6 +128,37 @@ def load_llm_config(
         api_key=api_key,
         base_url=base_url,
     )
+
+
+def list_models(
+    cfg: LLMConfig,
+    *,
+    fallback: Optional[list[str]] = None,
+) -> list[str]:
+    """Best-effort list of model IDs the provider exposes.
+
+    Returns `fallback` (or the package default for the provider) when
+    the endpoint isn't reachable, so the dashboard's model dropdown
+    is never empty.
+    """
+    url = f"{cfg.base_url.rstrip('/')}/models"
+    req = urllib.request.Request(url, method="GET", headers={
+        "Authorization": f"Bearer {cfg.api_key or 'ollama'}",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            body = resp.read().decode("utf-8")
+        payload = json.loads(body)
+        ids = [m.get("id") for m in payload.get("data", []) if m.get("id")]
+        if ids:
+            return ids
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, OSError):
+        pass
+    if fallback is not None:
+        return fallback
+    if cfg.provider == "ollama":
+        return list(DEFAULT_OLLAMA_MODELS)
+    return list(DEFAULT_GEMINI_MODELS)
 
 
 # ---------------------------------------------------------------------------
@@ -123,8 +188,13 @@ def chat_completion(
     Raises LLMError on transport, auth, or schema errors. Returns the raw
     response dict; caller is responsible for extracting content.
     """
-    if not cfg.api_key:
-        raise LLMError("No API key configured. Set one in the LLM panel, or set GEMINI_API_KEY env var.")
+    # Cloud providers (gemini) require an API key. Ollama doesn't, but
+    # the Bearer header is still sent (ollama ignores it).
+    if not cfg.api_key and cfg.provider != "ollama":
+        raise LLMError(
+            f"No API key configured for {cfg.provider}. "
+            f"Set one in the LLM panel, or set GEMINI_API_KEY env var."
+        )
 
     url = f"{cfg.base_url.rstrip('/')}/chat/completions"
     payload = {
@@ -367,9 +437,29 @@ def classify_hs_code(
             latency,
         )
 
+    parsed["hs_code"] = _normalize_hs_code(parsed["hs_code"])
     parsed.setdefault("confidence", 0.5)
     parsed.setdefault("reasoning", "")
     return (parsed, latency)
+
+
+def _normalize_hs_code(value: object) -> str:
+    """Coerce an HS code string to the canonical 6-digit `NNNN.NN` form.
+
+    Smaller local models (and gemini 2.5-flash on a bad day) sometimes
+    emit 8- or 10-digit codes. Customs classification only has 6 digits;
+    the extra digits are subheadings the LLM is hallucinating. We trim
+    to the first 6 digits and reformat. If the value is unparseable we
+    return it unchanged so the caller can see the raw model output.
+    """
+    if not isinstance(value, str):
+        return str(value)
+    s = value.strip()
+    # Strip everything that isn't a digit, then take the first 6.
+    digits = "".join(ch for ch in s if ch.isdigit())
+    if len(digits) < 6:
+        return s  # give up; let the eval show "wrong"
+    return f"{digits[:4]}.{digits[4:6]}"
 
 
 # ---------------------------------------------------------------------------
@@ -378,13 +468,9 @@ def classify_hs_code(
 
 def probe_connection(cfg: LLMConfig) -> tuple[bool, str]:
     """Cheap connectivity check. Returns (ok, message)."""
-    if not cfg.api_key:
-        return (False, "No API key configured")
-    if cfg.provider == "gemini":
-        # Use the OpenAI-compat /models endpoint as a cheap auth probe
-        url = f"{cfg.base_url.rstrip('/')}/models"
-    else:
-        url = f"{cfg.base_url.rstrip('/')}/models"
+    if not cfg.api_key and cfg.provider != "ollama":
+        return (False, f"No API key configured for {cfg.provider}")
+    url = f"{cfg.base_url.rstrip('/')}/models"
     req = urllib.request.Request(url, method="GET", headers={
         "Authorization": f"Bearer {cfg.api_key}",
     })
