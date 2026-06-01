@@ -37,15 +37,16 @@ DEFAULT_GEMINI_MODELS = [
 # Ollama defaults. The model list is dynamic — `load_llm_config()` queries
 # the live /v1/models endpoint and falls back to these when the server
 # isn't reachable (so the UI still has *something* to populate the
-# dropdown with). llama3.1:8b is the default because llama3.2:latest
-# (2GB, 4-bit) is too small for HS classification — it scored 0/12 on
-# the showcase; llama3.1:8b scores 2/12 (the easy T-shirt and the
-# refurbished laptop).
+# dropdown with). gemma4:latest is the default: at 10GB it scored
+# 4/12 (33%) on the showcase, tied with regex — best of the locally
+# available options. llama3.2:latest (2GB) gets 0/12; qwen3.5:9b is
+# a thinking-tier model that hits the max_tokens budget and returns
+# empty content, so it's listed but not recommended.
 DEFAULT_OLLAMA_MODELS = [
-    "llama3.1:8b",
-    "llama3.2:latest",
-    "qwen3.5:9b",
     "gemma4:latest",
+    "llama3.1:8b",
+    "qwen3.5:9b",
+    "llama3.2:latest",
     "codestral:latest",
     "devstral:latest",
 ]
@@ -67,7 +68,10 @@ class LLMConfig:
     model: str
     api_key: str
     base_url: str
-    timeout: float = 30.0
+    # Generous default for local ollama: thinking-tier models can take
+    # 20-30s per case on first call. 60s leaves headroom without making
+    # the dashboard feel hung on a true network failure.
+    timeout: float = 60.0
 
 
 def load_llm_config(
@@ -104,7 +108,7 @@ def load_llm_config(
 
     # Default model is provider-specific. Ollama has many tags (`:latest`,
     # `:8b`, etc) so the dashboard usually overrides this.
-    default_model = "llama3.1:8b" if provider == "ollama" else "gemini-2.5-flash"
+    default_model = "gemma4:latest" if provider == "ollama" else "gemini-2.5-flash"
     model = (
         os.environ.get("LLM_MODEL")
         or overrides.get("model", default_model)
@@ -200,6 +204,11 @@ def chat_completion(
         )
 
     url = f"{cfg.base_url.rstrip('/')}/chat/completions"
+    # Ollama thinking-tier models (gemma4, qwen3.5, etc.) burn the entire
+    # max_tokens budget on hidden reasoning and return empty content when
+    # it's too small. 400 is fine for gemini; bump to 2000 for ollama so
+    # the model has room to think *and* produce a JSON answer.
+    max_tokens = 2000 if cfg.provider == "ollama" else 400
     payload = {
         "model": cfg.model,
         "messages": [
@@ -207,7 +216,7 @@ def chat_completion(
             {"role": "user", "content": user_prompt},
         ],
         "temperature": 0.1,
-        "max_tokens": 400,
+        "max_tokens": max_tokens,
         # Gemini's OpenAI-compat endpoint supports response_format for
         # constrained JSON output. Some models (notably the "thinking"
         # tier like 2.5-flash) otherwise emit prose + JSON-with-bugs
