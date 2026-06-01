@@ -1396,18 +1396,44 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
 
     st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)
 
+
+# ---------------------------------------------------------------------------
+# LLM Showcase
+# ---------------------------------------------------------------------------
+
+def render_llm_showcase() -> None:
+    """LLM vs Regex HS classification showcase with live Gemini calls.
+
+    Session-only API key, stdlib urllib, no new pip deps. The showcase
+    runs 12 curated test cases through both a regex classifier and a
+    Gemini call, scores both against gold HS codes, and shows per-case
+    reasoning, latency, and accuracy stats.
+    """
+
     _md("""
     <div class="section">
       <div class="section-head">
-        <div class="left"><h2>LLM vs Regex <span class="muted">— HS classification showcase with live Gemini calls</span></h2></div>
-        <div class="right" id="llm-case-count">12 test cases</div>
+        <div class="left"><h2>LLM vs Regex <span class="muted">— HS classification with live Gemini calls</span></h2></div>
+        <div class="right">12 curated test cases</div>
       </div>
     </div>
     """)
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-    # Import LLM showcase
+    _md("""
+    <div class="pipeline-detail-text" style="margin-bottom:20px;">
+      Regex-based classification works well for structured data but struggles with ambiguity, context,
+      and multi-language inputs. Large Language Models understand semantics, infer context, and handle
+      natural language descriptions. The 12 cases below include both <strong>LLM-favoured</strong> scenarios
+      (ambiguous products, multilingual invoices, multi-component kits) and <strong>regex-favoured</strong>
+      scenarios (clean keyword matches, edge cases where LLMs hallucinate). Each is scored against a
+      gold HS code so accuracy is honest, not curated.
+    </div>
+    """)
+
+    # Imports scoped to this function — keeps the pipeline tab's
+    # import cost off the critical path of the dashboard tab.
     from llm_classifier import (
         classify_with_llm,
         classify_with_regex,
@@ -1428,7 +1454,6 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
         st.session_state["_llm_overrides"] = {}
 
     overrides = st.session_state["_llm_overrides"]
-
     cfg_now = load_llm_config(overrides, secrets={})
 
     _md("""
@@ -1457,10 +1482,10 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
             st.rerun()
 
     with col_model:
-        model_options = DEFAULT_GEMINI_MODELS
+        model_options = list(DEFAULT_GEMINI_MODELS)
         current_model = overrides.get("model", "gemini-2.0-flash")
         if current_model not in model_options:
-            model_options = [current_model] + list(model_options)
+            model_options = [current_model] + model_options
         new_model = st.selectbox(
             "Model",
             model_options,
@@ -1652,7 +1677,7 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
 
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
-    # ----- Why-LLMs and Hybrid sections (kept from before) ------------------
+    # ----- Why-LLMs and Hybrid sections -----------------------------------
     _md("""
     <div class="pipeline-details">
       <div class="pipeline-details-title">Why LLMs Excel at Classification — and Where They Don't</div>
@@ -1709,7 +1734,7 @@ r"^[A-Z]{3}$" → lookup in ISO 3166-1 alpha-3 table
         This ensures fast processing for clear cases while leveraging AI for complex scenarios.
         <br><br>
         <strong>Verification layer:</strong> For high-value or high-risk shipments, send the LLM answer back to a second
-        model or to a human reviewer. The showcase above demonstrates that neither method is infallible — the gold HS
+        model or to a human reviewer. The case results above demonstrate that neither method is infallible — the gold HS
         code is the only ground truth.
       </div>
     </div>
@@ -1725,7 +1750,7 @@ def main() -> None:
 
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
-    tab_dashboard, tab_pipeline, tab_api, tab_docs = st.tabs(["Dashboard", "Data Pipeline", "API", "Documents"])
+    tab_dashboard, tab_pipeline, tab_llm, tab_api, tab_docs = st.tabs(["Dashboard", "Data Pipeline", "LLM", "API", "Documents"])
 
     with tab_dashboard:
         df, lane_statuses = render_data_input()
@@ -1746,6 +1771,9 @@ def main() -> None:
 
     with tab_pipeline:
         render_pipeline_showcase()
+
+    with tab_llm:
+        render_llm_showcase()
 
     with tab_api:
         render_api_showcase()
