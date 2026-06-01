@@ -1449,23 +1449,36 @@ def render_llm_showcase() -> None:
 
     # Imports scoped to this function — keeps the pipeline tab's
     # import cost off the critical path of the dashboard tab.
-    from llm_classifier import (
-        build_evald,
-        classify_with_llm,
-        classify_with_regex,
-        get_all_test_cases,
-        get_statistics,
-        load_saved_results,
-        make_baseline_results,
-        save_results,
-    )
-    from parcel_ops_llm import (
-        DEFAULT_GEMINI_MODELS,
-        DEFAULT_OLLAMA_MODELS,
-        list_models,
-        load_llm_config,
-        probe_connection,
-    )
+    # Wrapped in try/except so any future import error surfaces inline in
+    # the LLM tab instead of crashing the entire app at render time. On
+    # Streamlit Cloud the original ImportError message is redacted, so we
+    # render `traceback.format_exc()` directly into the page.
+    try:
+        from llm_classifier import (
+            build_evald,
+            classify_with_llm,
+            classify_with_regex,
+            get_all_test_cases,
+            get_statistics,
+            load_saved_results,
+            make_baseline_results,
+            save_results,
+        )
+        from parcel_ops_llm import (
+            DEFAULT_GEMINI_MODELS,
+            DEFAULT_OLLAMA_MODELS,
+            list_models,
+            load_llm_config,
+            probe_connection,
+        )
+    except ImportError:
+        import traceback
+        st.error(
+            "LLM showcase failed to load. The LLM tab is unavailable until the "
+            "deployment is refreshed. Other tabs are not affected."
+        )
+        st.code(traceback.format_exc(), language="python")
+        return
 
     test_cases = get_all_test_cases()
 
