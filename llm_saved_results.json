@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "captured_at": "2026-06-01T14:47:28+00:00",
-  "model": "gemini-2.5-flash",
+  "captured_at": "2026-06-01T15:18:46+00:00",
+  "model": "llama3.2:latest",
   "results": [
     {
       "gold_hs_code": "8542.31",
@@ -21,12 +21,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "3502.90",
+        "confidence": 0.9,
+        "reasoning": "Plastic housing for electronic devices falls under Chapter 35, heading 2, subheading 90, as it is a container or casing for an electrical device.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 5662.239699973725,
+        "is_mock": false
       },
       "llm_pitfall": null,
       "gold_reasoning": "The plastic housing is specifically designed to contain electronic circuit boards. By GRI 1 and Note 1(g) to Chapter 39, articles of plastic which are parts of goods of Chapter 85 are classified in Chapter 85. Essential character is electronic."
@@ -49,12 +49,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "4507.10",
+        "confidence": 0.9,
+        "reasoning": "Rubber mounts are classified under Chapter 45 (Raw hides and skins) but since they are mounted on a metal frame, it falls under Chapter 47 (Articles of steel or iron). The specific product is a machinery support structure with rubber mounts, which aligns with the classification of 'other articles of steel or iron'.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 8409.001699998043,
+        "is_mock": false
       },
       "llm_pitfall": null,
       "gold_reasoning": "Classified as a part of machinery under heading 8431 (parts suitable for use solely or principally with the machinery of headings 8425 to 8430). The rubber mounts indicate purpose-built mounting, not a general steel article."
@@ -77,12 +77,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "3536.90",
+        "confidence": 0.9,
+        "reasoning": "The ceramic coffee mug is classified under Chapter 35 (Articles of ceramics, porcelain, and other potsherds) and subheading 3536.90.10, as it is a ceramic article with no specific functional features that would require classification in another chapter.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 7279.699599952437,
+        "is_mock": false
       },
       "llm_pitfall": null,
       "gold_reasoning": "Electric heating appliance. Ceramic is incidental; essential character is the electro-thermic function. Note 1(u) to Chapter 85 confirms Chapter 69 ceramic articles fitted with electrical features fall in Chapter 85."
@@ -105,12 +105,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "3502.10",
+        "confidence": 0.9,
+        "reasoning": "The product is a USB flash drive with a plastic shell, which falls under Chapter 35 of the Harmonized System, subheading 35.02.10.00, covering other articles for the same use as data carriers.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 6751.0707000037655,
+        "is_mock": false
       },
       "llm_pitfall": null,
       "gold_reasoning": "Solid-state non-volatile storage device. Heading 8523 covers semiconductor media. Despite the plastic enclosure, the essential character is the storage medium. Plastic shell is incidental packaging."
@@ -133,12 +133,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "8539.10",
+        "confidence": 0.9,
+        "reasoning": "Electronic voltage regulators with integrated circuits are classified as electrical machinery and apparatus, specifically as 'Other parts of electrical machinery' (HS Chapter 85).",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 5177.103299996816,
+        "is_mock": false
       },
       "llm_pitfall": null,
       "gold_reasoning": "Translation: 'Electronic voltage regulators, integrated circuits'. The term 'integrierte Schaltkreise' (integrated circuits) is definitive for heading 8542."
@@ -161,12 +161,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "3505.10",
+        "confidence": 0.9,
+        "reasoning": "Plastic electronic component housings are classified under HS code 3505.10.00 as they are made of plastic and serve as a housing for an electronic component.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 5556.707399955485,
+        "is_mock": false
       },
       "llm_pitfall": null,
       "gold_reasoning": "Translation: 'Plastic electronic component housing/shell'. By Chapter 39 Note 1(g), parts of goods of Chapter 85 are classified in Chapter 85. Essential character is electronic component housing."
@@ -189,12 +189,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "3505.10",
+        "confidence": 0.9,
+        "reasoning": "Modules of a kind used in any fixed installations for generating electricity (solar modules) are classified under chapter 35. The specific classification as 'policristalinos' is not necessary to determine the HS code.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 4152.434299991,
+        "is_mock": false
       },
       "llm_pitfall": null,
       "gold_reasoning": "Translation: 'Photovoltaic modules, 400W polycrystalline'. Heading 8541 covers photosensitive semiconductor devices including photovoltaic cells and modules."
@@ -217,12 +217,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "8539.90",
+        "confidence": 0.8,
+        "reasoning": "Kit of replacement parts for an industrial control system, classified under machinery and mechanical appliances, other.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 2820.0879000360146,
+        "is_mock": false
       },
       "llm_pitfall": null,
       "gold_reasoning": "Per GRI 3(b), kits are classified by the component that gives them essential character. The control boards and power supply together form a control panel assembly, classified under 8537 (boards/panels for electric control)."
@@ -245,12 +245,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "6202.30",
+        "confidence": 0.9,
+        "reasoning": "Men's knitted cotton t-shirt falls under Chapter 6, Section X of the EU Combined Nomenclature, specifically HS code 6202.30.10 for men's knitted tops made from cotton.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 4775.799999944866,
+        "is_mock": false
       },
       "llm_pitfall": null,
       "gold_reasoning": "T-shirt, knitted, of cotton. Heading 6109 (T-shirts, of cotton or other textile materials, knitted or crocheted). Direct keyword match with no ambiguity."
@@ -273,12 +273,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "8215.10",
+        "confidence": 0.9,
+        "reasoning": "Stainless steel kitchen knives are classified under Chapter 21, heading 15, subheading 10, as cutlery of base metal, specifically stainless steel.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 4251.335699984338,
+        "is_mock": false
       },
       "llm_pitfall": null,
       "gold_reasoning": "Kitchen knives with stainless steel blades. Heading 8211 covers knives with cutting edges, serrated or not. Set classified as kitchen knives by GRI 1."
@@ -301,12 +301,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "4905.10",
+        "confidence": 0.9,
+        "reasoning": "Software license key printed on a paper card is classified as a printed matter, specifically a document, under Chapter 49 of the Harmonized System.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 3752.250300021842,
+        "is_mock": false
       },
       "llm_pitfall": "LLMs tend to default to 8523 or 8471 because the description mentions 'software'. Correct answer requires knowing that the carrier matters when no medium is present.",
       "gold_reasoning": "Printed matter. Per Note 1(m) to Chapter 85 and Section XV Note 6, software delivered as printed license code without physical media is classified by the carrier (paper) under heading 4901. Many LLMs incorrectly jump to 8523 (recording media) or 8471 (automatic data processing) by associating with software."
@@ -329,12 +329,12 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "—",
-        "confidence": 0.0,
-        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "hs_code": "3505.10",
+        "confidence": 0.9,
+        "reasoning": "Refurbished laptop computer is classified under Chapter 35, Section X of the Harmonized System, subheading 3505.10.90, as it falls within the scope of used or refurbished computers.",
         "correct": null,
-        "latency_ms": null,
-        "is_mock": true
+        "latency_ms": 4680.464599980041,
+        "is_mock": false
       },
       "llm_pitfall": "LLMs may flag 'refurbished' as requiring a different code or may incorrectly apply used-goods subheadings when classification is identical to new.",
       "gold_reasoning": "Portable automatic data processing machine. Refurbished units keep the same HS classification as new (Note 1(a) to Chapters 84-85 does not exclude used/refurbished goods). Some LLMs incorrectly apply 'used' surcharges or different headings for refurbished electronics."
