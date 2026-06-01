@@ -1,0 +1,343 @@
+{
+  "version": 1,
+  "captured_at": "2026-06-01T14:47:28+00:00",
+  "model": "gemini-2.5-flash",
+  "results": [
+    {
+      "gold_hs_code": "8542.31",
+      "expected_winner": "llm",
+      "regex_correct": false,
+      "llm_correct": false,
+      "case_id": "ambiguous_1",
+      "description": "Plastic housing for electronic device",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "3926.90",
+        "confidence": 0.72,
+        "reasoning": "Keyword 'plastic' matches Chapter 39 (Plastics).",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": null,
+      "gold_reasoning": "The plastic housing is specifically designed to contain electronic circuit boards. By GRI 1 and Note 1(g) to Chapter 39, articles of plastic which are parts of goods of Chapter 85 are classified in Chapter 85. Essential character is electronic."
+    },
+    {
+      "gold_hs_code": "8431.49",
+      "expected_winner": "llm",
+      "regex_correct": false,
+      "llm_correct": false,
+      "case_id": "ambiguous_2",
+      "description": "Metal frame with rubber mounting for machinery",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "7308.90",
+        "confidence": 0.68,
+        "reasoning": "Keyword 'metal'/'steel' and 'frame' match Chapter 73 (Iron/steel articles).",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": null,
+      "gold_reasoning": "Classified as a part of machinery under heading 8431 (parts suitable for use solely or principally with the machinery of headings 8425 to 8430). The rubber mounts indicate purpose-built mounting, not a general steel article."
+    },
+    {
+      "gold_hs_code": "8516.71",
+      "expected_winner": "llm",
+      "regex_correct": false,
+      "llm_correct": false,
+      "case_id": "ambiguous_3",
+      "description": "Ceramic coffee mug with electronic heating element",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "6911.10",
+        "confidence": 0.81,
+        "reasoning": "Keyword 'ceramic'/'coffee' matches Chapter 69 (Ceramic tableware).",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": null,
+      "gold_reasoning": "Electric heating appliance. Ceramic is incidental; essential character is the electro-thermic function. Note 1(u) to Chapter 85 confirms Chapter 69 ceramic articles fitted with electrical features fall in Chapter 85."
+    },
+    {
+      "gold_hs_code": "8523.51",
+      "expected_winner": "llm",
+      "regex_correct": false,
+      "llm_correct": false,
+      "case_id": "ambiguous_4",
+      "description": "USB flash drive, 64GB, plastic shell",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "3926.90",
+        "confidence": 0.72,
+        "reasoning": "Keyword 'plastic' matches Chapter 39 (Plastics).",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": null,
+      "gold_reasoning": "Solid-state non-volatile storage device. Heading 8523 covers semiconductor media. Despite the plastic enclosure, the essential character is the storage medium. Plastic shell is incidental packaging."
+    },
+    {
+      "gold_hs_code": "8542.31",
+      "expected_winner": "llm",
+      "regex_correct": false,
+      "llm_correct": false,
+      "case_id": "multilang_1",
+      "description": "Elektronische Spannungsregler, integrierte Schaltkreise",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "8504.40",
+        "confidence": 0.55,
+        "reasoning": "Partial match on voltage regulator / integrated circuit. Low confidence without context.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": null,
+      "gold_reasoning": "Translation: 'Electronic voltage regulators, integrated circuits'. The term 'integrierte Schaltkreise' (integrated circuits) is definitive for heading 8542."
+    },
+    {
+      "gold_hs_code": "8542.31",
+      "expected_winner": "llm",
+      "regex_correct": false,
+      "llm_correct": false,
+      "case_id": "multilang_2",
+      "description": "塑料电子元件外壳",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "3926.90",
+        "confidence": 0.4,
+        "reasoning": "Detected '塑料' (plastic). Cannot parse full Chinese description.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": null,
+      "gold_reasoning": "Translation: 'Plastic electronic component housing/shell'. By Chapter 39 Note 1(g), parts of goods of Chapter 85 are classified in Chapter 85. Essential character is electronic component housing."
+    },
+    {
+      "gold_hs_code": "8541.43",
+      "expected_winner": "llm",
+      "regex_correct": false,
+      "llm_correct": false,
+      "case_id": "multilang_3",
+      "description": "Módulos fotovoltaicos, 400W policristalinos",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "8541.40",
+        "confidence": 0.6,
+        "reasoning": "Partial match on 'photovoltaic'. Lower confidence on multilingual variants.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": null,
+      "gold_reasoning": "Translation: 'Photovoltaic modules, 400W polycrystalline'. Heading 8541 covers photosensitive semiconductor devices including photovoltaic cells and modules."
+    },
+    {
+      "gold_hs_code": "8537.10",
+      "expected_winner": "llm",
+      "regex_correct": false,
+      "llm_correct": false,
+      "case_id": "kit_1",
+      "description": "Replacement parts kit",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "9999.99",
+        "confidence": 0.0,
+        "reasoning": "No keyword rule fired.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": null,
+      "gold_reasoning": "Per GRI 3(b), kits are classified by the component that gives them essential character. The control boards and power supply together form a control panel assembly, classified under 8537 (boards/panels for electric control)."
+    },
+    {
+      "gold_hs_code": "6109.10",
+      "expected_winner": "regex",
+      "regex_correct": true,
+      "llm_correct": false,
+      "case_id": "regex_wins_1",
+      "description": "Cotton t-shirt, men's, knitted",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "6109.10",
+        "confidence": 0.95,
+        "reasoning": "Direct match: T-shirt, knitted, cotton.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": null,
+      "gold_reasoning": "T-shirt, knitted, of cotton. Heading 6109 (T-shirts, of cotton or other textile materials, knitted or crocheted). Direct keyword match with no ambiguity."
+    },
+    {
+      "gold_hs_code": "8211.91",
+      "expected_winner": "regex",
+      "regex_correct": true,
+      "llm_correct": false,
+      "case_id": "regex_wins_2",
+      "description": "Stainless steel kitchen knives, set of 6",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "8211.91",
+        "confidence": 0.93,
+        "reasoning": "Direct match: knives with cutting edges.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": null,
+      "gold_reasoning": "Kitchen knives with stainless steel blades. Heading 8211 covers knives with cutting edges, serrated or not. Set classified as kitchen knives by GRI 1."
+    },
+    {
+      "gold_hs_code": "4901.99",
+      "expected_winner": "regex",
+      "regex_correct": true,
+      "llm_correct": false,
+      "case_id": "llm_hallucination_1",
+      "description": "Software license key, printed on paper card",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "4901.99",
+        "confidence": 0.88,
+        "reasoning": "Keyword 'printed/paper card' matches 4901 (printed matter). Some LLMs incorrectly associate 'software' with recording media even when no media is shipped.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": "LLMs tend to default to 8523 or 8471 because the description mentions 'software'. Correct answer requires knowing that the carrier matters when no medium is present.",
+      "gold_reasoning": "Printed matter. Per Note 1(m) to Chapter 85 and Section XV Note 6, software delivered as printed license code without physical media is classified by the carrier (paper) under heading 4901. Many LLMs incorrectly jump to 8523 (recording media) or 8471 (automatic data processing) by associating with software."
+    },
+    {
+      "gold_hs_code": "8471.30",
+      "expected_winner": "regex",
+      "regex_correct": true,
+      "llm_correct": false,
+      "case_id": "llm_hallucination_2",
+      "description": "Refurbished laptop computer, 14 inch",
+      "regex_result": {
+        "method": "regex",
+        "hs_code": "8471.30",
+        "confidence": 0.9,
+        "reasoning": "Direct match: portable automatic data processing machine.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_result": {
+        "method": "llm",
+        "hs_code": "—",
+        "confidence": 0.0,
+        "reasoning": "No API key. Enter a Gemini key in the sidebar, or set GEMINI_API_KEY env var.",
+        "correct": null,
+        "latency_ms": null,
+        "is_mock": true
+      },
+      "llm_pitfall": "LLMs may flag 'refurbished' as requiring a different code or may incorrectly apply used-goods subheadings when classification is identical to new.",
+      "gold_reasoning": "Portable automatic data processing machine. Refurbished units keep the same HS classification as new (Note 1(a) to Chapters 84-85 does not exclude used/refurbished goods). Some LLMs incorrectly apply 'used' surcharges or different headings for refurbished electronics."
+    }
+  ]
+}
