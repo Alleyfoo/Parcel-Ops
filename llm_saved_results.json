@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "captured_at": "2026-06-01T16:46:07+00:00",
-  "model": "llama3.1:8b",
+  "captured_at": "2026-06-01T18:18:39+00:00",
+  "model": "gemma4:latest",
   "results": [
     {
       "gold_hs_code": "8542.31",
@@ -21,11 +21,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "3926.90",
-        "confidence": 1.0,
-        "reasoning": "The product is a plastic article, specifically a housing for an electronic device, which falls under Chapter 39 of the Harmonized System. The specific classification as 'other articles of plastics and articles of other materials of heading 3901 to 3914' (3926) is appropriate due to its use in housing electronic circuit boards.",
+        "hs_code": "9021.90",
+        "confidence": 0.8,
+        "reasoning": "The item is a plastic housing for an electronic device. While plastic housings themselves might fall under Chapter 39, the context suggests they are integral components designed to house and protect electronic circuit boards, making them specialized parts or assemblies related to electrical apparatus. Therefore, classifying them under Chapter 90, specifically as parts or accessories for electrical apparatus (9021.90), is the most appropriate classification, assuming they are not sold as generic plastic goods.",
         "correct": null,
-        "latency_ms": 11249.966400035191,
+        "latency_ms": 22172.933499969076,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -49,11 +49,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "7326.90",
-        "confidence": 1.0,
-        "reasoning": "The product is classified as a metal frame (Chapter 73) specifically designed for machinery, with rubber mounting (excluded from Chapter 40). The General Rule of Interpretation 3(b) applies, and the product's primary function is to provide structural support, making 7326.90 the most suitable classification.",
+        "hs_code": "8302.49",
+        "confidence": 0.9,
+        "reasoning": "The item is a metal frame (steel support structure) designed to hold machinery. Since the frame itself is the primary structural component and is not specifically classified as a machine part (like a bearing or coupling), it falls under general articles of base metal. Specifically, 8302 covers other articles of base metal, and 8302.49 covers other articles, making it the most appropriate classification for a structural metal frame.",
         "correct": null,
-        "latency_ms": 11229.8490999965,
+        "latency_ms": 27044.188200030476,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -77,11 +77,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "6913.90",
+        "hs_code": "8517.62",
         "confidence": 0.9,
-        "reasoning": "The product is classified as a ceramic coffee mug (Chapter 69) under GRI 1, as it is a good of a kind that has not been previously mentioned in the Harmonized System. The specific characteristics such as electronic heating element and Bluetooth connectivity do not change its essential character as a ceramic coffee mug.",
+        "reasoning": "The item is primarily an electronic device (smart mug) with heating and connectivity features, making it an electrical apparatus. While it has a ceramic mug component, its function and core value lie in its electronic elements (heating element, Bluetooth connectivity), classifying it under Chapter 85, specifically as an electrical apparatus for switching or protecting electrical circuits, or more broadly, an electrical appliance, which is best represented by 8517.62 (other apparatus for switching or protecting electrical circuits, or related electrical appliances).",
         "correct": null,
-        "latency_ms": 10160.592300002463,
+        "latency_ms": 26190.51510002464,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -105,11 +105,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "8525.30",
-        "confidence": 1.0,
-        "reasoning": "The product is a mass-market consumer storage device with flash memory, which falls under Chapter 85 (Electrical machinery and equipment) and specifically within the category of 'parts and accessories' for electrical equipment in Heading 8525. The presence of plastic shell further supports this classification.",
+        "hs_code": "8523.80",
+        "confidence": 0.9,
+        "reasoning": "The item is a USB flash drive, which is an electronic storage device. According to the EU Combined Nomenclature, electrical apparatus for transmission or reception of voice, images or other data (including data storage devices) are classified under Chapter 85. Specifically, 8523 covers electrical apparatus for electric transmission or reception of voice, images or other data, and flash memory devices fall under the general heading 8523.80.",
         "correct": null,
-        "latency_ms": 9790.201399999205,
+        "latency_ms": 27977.66450000927,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -119,7 +119,7 @@
       "gold_hs_code": "8542.31",
       "expected_winner": "llm",
       "regex_correct": false,
-      "llm_correct": false,
+      "llm_correct": true,
       "case_id": "multilang_1",
       "description": "Elektronische Spannungsregler, integrierte Schaltkreise",
       "regex_result": {
@@ -133,11 +133,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "8543.70",
-        "confidence": 1.0,
-        "reasoning": "The product is described as an electronic voltage regulator with integrated circuits, which falls under the category of 'Electronic components and boards' in Chapter 85 of the Harmonized System. The specific code 8543.70 covers 'Electrical, electronic and optical parts of base appliances; vacuum fluorecent lamps and other electro-luminescent sources'.",
+        "hs_code": "8542.31",
+        "confidence": 0.95,
+        "reasoning": "The product is described as 'Elektronische Spannungsregler, integrierte Schaltkreise' (Electronic voltage regulators, integrated circuits). These are semiconductor devices that fall under Chapter 85. Specifically, integrated circuits are classified under heading 8542.31, which covers electronic integrated circuits, regardless of their specific function (like voltage regulation).",
         "correct": null,
-        "latency_ms": 10976.051300007384,
+        "latency_ms": 15734.591599961277,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -161,11 +161,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "3926.90",
-        "confidence": 0.9,
-        "reasoning": "The product is described as a plastic electronic component casing, which suggests it falls under Chapter 39 (Plastics and Articles Thereof). The specific classification of 3926 (Other articles of plastics) and the more detailed code 3926.9010 (Other articles of plastics, other) indicates that the product is a type of plastic article not specified elsewhere in this chapter.",
+        "hs_code": "85.41",
+        "confidence": 0.7,
+        "reasoning": "The item is described as plastic electronic component casings. While 'plastic' suggests Chapter 39, the function ('electronic component casing') dictates that it is an integral part of an electrical apparatus. Therefore, the classification should follow the principle of classifying goods by their function, placing it under Chapter 85 (Electrical machinery and equipment), specifically 85.41, which covers parts for electrical apparatus.",
         "correct": null,
-        "latency_ms": 11430.669100023806,
+        "latency_ms": 21864.504800003488,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -189,11 +189,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "8507.30",
+        "hs_code": "8541.40",
         "confidence": 1.0,
-        "reasoning": "The product description mentions 'módulos fotovoltaicos' which translates to photovoltaic modules, and specifies a power rating of 400W. According to the EU Combined Nomenclature, solar panels or other photovoltaic generators with a peak power not exceeding 1000W are classified under 8507.30.",
+        "reasoning": "Photovoltaic modules are electrical apparatus designed to convert light into electricity. They fall under Chapter 85, specifically heading 8541, which covers electric generators, converters, transformers, and static converters. Since these are modules for generating electricity, 8541.40 (other electrical apparatus) is the most appropriate classification under the EU Combined Nomenclature.",
         "correct": null,
-        "latency_ms": 11332.068299991079,
+        "latency_ms": 28236.240199999884,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -217,11 +217,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "8544.40",
+        "hs_code": "8543.70",
         "confidence": 0.9,
-        "reasoning": "The kit contains electronic components (circuit boards and connectors) and an electrical power supply, which are all classified under Chapter 85 (Electrical machinery). The specific classification of 8544.40 covers 'Electrical control or protection equipment' which includes industrial control systems.",
+        "reasoning": "The kit is described as a replacement parts kit for an industrial control system, containing circuit boards, a power supply, and connectors. Since the primary components are electronic and intended for the repair or function of electrical machinery (control systems), the most appropriate classification is under Chapter 85, specifically 8543.70, which covers electrical machines and apparatus, not specified or described, and parts thereof, which are not themselves covered by other headings. This grouping treats the kit as a functional unit for repair.",
         "correct": null,
-        "latency_ms": 9343.280899978708,
+        "latency_ms": 28546.186599996872,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -247,9 +247,9 @@
         "method": "llm",
         "hs_code": "6109.10",
         "confidence": 1.0,
-        "reasoning": "The product is a knitted garment made of cotton, which falls under Chapter 61 (Articles of apparel and clothing accessories, knitted or crocheted). The specific code 6109.10 covers men's or boys' shirts, knitted or crocheted, of cotton.",
+        "reasoning": "The product is a knitted t-shirt made of cotton, which falls under Chapter 61 (Articles of apparel and clothing accessories, knitted or crocheted). Specifically, heading 6109 covers t-shirts, singlets, and other vests, and the subheading 6109.10 is designated for those made of cotton.",
         "correct": null,
-        "latency_ms": 9699.393599992618,
+        "latency_ms": 3547.474799968768,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -259,7 +259,7 @@
       "gold_hs_code": "8211.91",
       "expected_winner": "regex",
       "regex_correct": true,
-      "llm_correct": false,
+      "llm_correct": true,
       "case_id": "regex_wins_2",
       "description": "Stainless steel kitchen knives, set of 6",
       "regex_result": {
@@ -273,11 +273,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "8211.99",
+        "hs_code": "8211.91",
         "confidence": 0.95,
-        "reasoning": "The product is a set of stainless steel kitchen knives, which falls under Chapter 82 (Tools, implements, cutlery, spoons and forks, and other articles) of the Harmonized System. The specific code 8211.99 covers 'Other articles of cutlery' not elsewhere specified or included.",
+        "reasoning": "Knives are classified as cutlery. Since they are made of stainless steel, they fall under heading 8211 (Kitchen or household cutlery). Specifically, 8211.91 covers other cutlery, which includes knives not specified elsewhere, making this the most appropriate 6-digit classification.",
         "correct": null,
-        "latency_ms": 10434.585999988485,
+        "latency_ms": 3378.8697000127286,
         "is_mock": false
       },
       "llm_pitfall": null,
@@ -301,11 +301,11 @@
       },
       "llm_result": {
         "method": "llm",
-        "hs_code": "8524.40",
-        "confidence": 1.0,
-        "reasoning": "The product is a software license key printed on paper, which falls under Chapter 85 (Electrical machinery; sound recorders and reproducers, television image and sound recorders and reproducers, and parts and accessories of such articles) and specifically under heading 8524 (Other electronic equipment). The subheading 8524.40 covers 'Printed circuits' but also includes other printed or written information on paper or card.",
+        "hs_code": "9903.90",
+        "confidence": 0.9,
+        "reasoning": "Software licenses, especially when provided only as printed keys or codes without physical media, are generally considered intangible goods or services. Under the EU Combined Nomenclature, goods that are not physical merchandise are often classified under Chapter 99 (for statistical purposes) or, if they represent a physical item (like the paper card itself), they are classified based on the material. Since the primary function is the license/key, and the physical item is minimal, 9903.90 (other goods) is the most appropriate placeholder for non-standard or intangible goods not covered elsewhere, acknowledging the nature of the item as a representation of a service/right.",
         "correct": null,
-        "latency_ms": 12554.674200015143,
+        "latency_ms": 5688.182399957441,
         "is_mock": false
       },
       "llm_pitfall": "LLMs tend to default to 8523 or 8471 because the description mentions 'software'. Correct answer requires knowing that the carrier matters when no medium is present.",
@@ -331,9 +331,9 @@
         "method": "llm",
         "hs_code": "8471.30",
         "confidence": 0.95,
-        "reasoning": "The product is a laptop computer, which falls under Chapter 84 of the Harmonized System. As it's a refurbished laptop, we consider its essential character to be that of a laptop (GRI 3(b)). The specific characteristics such as RAM and SSD are not sufficient to change the classification from a general laptop category. Therefore, we classify it under 8471.30, which covers 'Laptops and notebooks with LCD screens'.",
+        "reasoning": "The item is a laptop computer, which falls under Chapter 84, specifically heading 8471 for automatic data processing machines. Since it is a functional, refurbished unit with modern components and warranty, it is classified as a complete machine (8471.30) rather than merely used goods, which are generally classified under Chapter 97. The specific model and components confirm its classification as a modern computing device.",
         "correct": null,
-        "latency_ms": 12756.550399994012,
+        "latency_ms": 19141.49350003572,
         "is_mock": false
       },
       "llm_pitfall": "LLMs may flag 'refurbished' as requiring a different code or may incorrectly apply used-goods subheadings when classification is identical to new.",
