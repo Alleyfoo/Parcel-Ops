@@ -1435,11 +1435,14 @@ def render_llm_showcase() -> None:
     # Imports scoped to this function — keeps the pipeline tab's
     # import cost off the critical path of the dashboard tab.
     from llm_classifier import (
+        build_evald,
         classify_with_llm,
         classify_with_regex,
-        evaluate_results,
         get_all_test_cases,
         get_statistics,
+        load_saved_results,
+        make_baseline_results,
+        save_results,
     )
     from parcel_ops_llm import (
         DEFAULT_GEMINI_MODELS,
@@ -1527,11 +1530,39 @@ def render_llm_showcase() -> None:
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-    # ----- Stats header (placeholder values until run) ---------------------
+    # ----- Stats header ----------------------------------------------------
+    # On first open we load `llm_saved_results.json` if present so the visitor
+    # sees real per-case LLM results without configuring an API key. Track
+    # the provenance so the UI can show "saved baseline" vs "fresh run" and
+    # enable a one-click reset.
     if "llm_results" not in st.session_state:
-        st.session_state["llm_results"] = None  # None = not yet run
+        saved = load_saved_results()
+        if saved and saved.get("results"):
+            st.session_state["llm_results"] = saved["results"]
+            st.session_state["llm_results_source"] = "saved"
+            st.session_state["llm_results_saved_at"] = saved.get("captured_at")
+            st.session_state["llm_results_saved_model"] = saved.get("model")
+        else:
+            st.session_state["llm_results"] = None  # None = not yet run
+            st.session_state["llm_results_source"] = "none"
+
+    # A "reset" button click drops in-memory results and reloads from disk.
+    if "llm_reset_requested" not in st.session_state:
+        st.session_state["llm_reset_requested"] = False
+    if st.session_state.pop("llm_reset_requested", False):
+        saved = load_saved_results()
+        if saved and saved.get("results"):
+            st.session_state["llm_results"] = saved["results"]
+            st.session_state["llm_results_source"] = "saved"
+            st.session_state["llm_results_saved_at"] = saved.get("captured_at")
+            st.session_state["llm_results_saved_model"] = saved.get("model")
+        else:
+            st.session_state["llm_results"] = None
+            st.session_state["llm_results_source"] = "none"
+        st.rerun()
 
     results = st.session_state["llm_results"]
+    results_source = st.session_state.get("llm_results_source", "none")
     stats = get_statistics(results)
 
     col1, col2, col3, col4 = st.columns(4)
@@ -1548,6 +1579,44 @@ def render_llm_showcase() -> None:
         else:
             label = "—"
         st.metric("LLM vs Regex", label)
+
+    # ----- Source caption + reset button -----------------------------------
+    # Tell the visitor where the visible data is coming from. A saved
+    # baseline gives them a real first impression with no API key needed;
+    # a "live" run was just executed in this tab.
+    has_saved = load_saved_results() is not None
+    if results_source == "saved":
+        saved_at = st.session_state.get("llm_results_saved_at", "")
+        saved_model = st.session_state.get("llm_results_saved_model", "")
+        st.caption(
+            f"Source: **saved baseline** from `llm_saved_results.json`"
+            + (f" (captured {saved_at}" if saved_at else "")
+            + (f", model `{saved_model}`" if saved_model else "")
+            + "). Re-run with your own key to refresh."
+        )
+    elif results_source == "live":
+        st.caption(
+            "Source: **live run** from this session. Saved to "
+            "`llm_saved_results.json` and shown to future visitors."
+        )
+    else:
+        st.caption(
+            "Source: no baseline yet. Run the batch to capture one."
+        )
+
+    # Reset to saved baseline. Only enabled if a saved baseline exists
+    # AND the in-memory results currently differ from the saved copy
+    # (otherwise the button is a no-op).
+    if has_saved and results_source != "saved":
+        reset_col, _ = st.columns([1, 3])
+        with reset_col:
+            if st.button(
+                "Reset to saved baseline",
+                use_container_width=True,
+                help="Drop the in-memory run and reload the saved baseline from disk.",
+            ):
+                st.session_state["llm_reset_requested"] = True
+                st.rerun()
 
     # Run-all controls. Free-tier Gemini is ~5 RPM (one request per 12s),
     # so we pace the batch with a 13s gap between calls. On 429 we stop
@@ -1569,42 +1638,27 @@ def render_llm_showcase() -> None:
 
     if run_clicked and cfg_now.api_key:
         import time as _time
+        from llm_classifier import ClassificationResult
         results = []
         progress = st.progress(0.0, text="Starting…")
         eta_text = st.empty()
         hit_rate_limit = False
         n = len(test_cases)
-        # Pre-fill the batch slot so the per-case view is populated even
-        # for rate-limited cases (we'll overwrite llm_result below).
         for i, case in enumerate(test_cases, 1):
             case_start = _time.perf_counter()
             if hit_rate_limit and i > 1:
                 # Mark this case as rate-limited without calling the API.
-                regex_res = classify_with_regex(case["description"], case.get("context", ""))
-                llm_dict = {
-                    "method": "llm",
-                    "hs_code": "—",
-                    "confidence": 0.0,
-                    "reasoning": (
+                llm_res = ClassificationResult(
+                    method="llm",
+                    hs_code="—",
+                    confidence=0.0,
+                    reasoning=(
                         "Skipped — free-tier rate limit hit on a previous case in this batch. "
                         "Click 'Run this case' below to retry, or wait ~60s and run the batch again."
                     ),
-                    "latency_ms": None,
-                    "is_mock": False,
-                    "rate_limited": True,
-                }
-                from dataclasses import dataclass as _dc
-                @_dc
-                class _Stub:
-                    method: str = "llm"
-                    hs_code: str = "—"
-                    confidence: float = 0.0
-                    reasoning: str = ""
-                    correct: bool = False
-                    latency_ms: object = None
-                    is_mock: bool = False
-                    def to_dict(self_inner): return llm_dict
-                llm_res = _Stub()
+                    latency_ms=None,
+                    is_mock=False,
+                )
             else:
                 progress.progress(
                     (i - 1) / n,
@@ -1614,18 +1668,9 @@ def render_llm_showcase() -> None:
                     f"ETA ~{int((n - i + 1) * _RUN_PACE_SECONDS / 60)} min — pacing {_RUN_PACE_SECONDS:.0f}s between calls."
                 )
                 with st.spinner(f"Case {i}/{n}: {case['description'][:60]}…"):
-                    regex_res = classify_with_regex(case["description"], case.get("context", ""))
                     llm_res = classify_with_llm(case["description"], case.get("context", ""))
 
-            evald = evaluate_results(case, regex_res, llm_res)
-            evald["case_id"] = case["id"]
-            evald["description"] = case["description"]
-            evald["expected_winner"] = case.get("expected_winner")
-            evald["regex_result"] = regex_res.to_dict()
-            evald["llm_result"] = llm_res.to_dict()
-            evald["llm_pitfall"] = case.get("llm_pitfall")
-            evald["gold_reasoning"] = case.get("gold_reasoning", "")
-            results.append(evald)
+            results.append(build_evald(case, llm_res))
 
             # If this case got rate-limited, halt the batch — we know
             # the next call would also 429.
@@ -1647,28 +1692,30 @@ def render_llm_showcase() -> None:
         progress.progress(1.0, text="Done.")
         eta_text.empty()
         st.session_state["llm_results"] = results
+        st.session_state["llm_results_source"] = "live"
+        st.session_state.pop("llm_results_saved_at", None)
+        st.session_state.pop("llm_results_saved_model", None)
+        # Persist so a future visitor (or this visitor after closing the
+        # tab) sees the freshest results. Atomic write inside save_results.
+        try:
+            save_results(results, model=cfg_now.model)
+        except OSError as e:
+            st.warning(
+                f"Could not write llm_saved_results.json: {e}. "
+                f"Results are still visible this session."
+            )
         st.rerun()
 
     if results is None:
         st.info(
-            "Click **Run LLM on all cases** to call Gemini. The LLM column below "
-            "will populate with real model output and accuracy stats will be computed "
-            "from the gold HS codes in the test cases."
+            "No saved baseline found. Click **Run LLM on all cases** to call Gemini, "
+            "or load the test fixtures below. The LLM column will populate with real "
+            "model output and accuracy stats will be computed from the gold HS codes."
         )
-        # Pre-fill with regex-only results for the per-case view
-        results = []
-        for case in test_cases:
-            regex_res = classify_with_regex(case["description"], case.get("context", ""))
-            llm_res = classify_with_llm(case["description"], case.get("context", ""))
-            evald = evaluate_results(case, regex_res, llm_res)
-            evald["case_id"] = case["id"]
-            evald["description"] = case["description"]
-            evald["expected_winner"] = case.get("expected_winner")
-            evald["regex_result"] = regex_res.to_dict()
-            evald["llm_result"] = llm_res.to_dict()
-            evald["llm_pitfall"] = case.get("llm_pitfall")
-            evald["gold_reasoning"] = case.get("gold_reasoning", "")
-            results.append(evald)
+        # Pre-fill with regex scores + no-key LLM placeholders so the per-case
+        # expanders below are still meaningful (you can read every gold
+        # reasoning and see what the regex column produced).
+        results = make_baseline_results()
 
     # ----- Per-case expanders ----------------------------------------------
     for i, r in enumerate(results, 1):
@@ -1711,22 +1758,22 @@ def render_llm_showcase() -> None:
             if run_this and cfg_now.api_key:
                 with st.spinner(f"Calling Gemini for case {i}…"):
                     llm_res = classify_with_llm(r["description"], case_meta.get("context", "") if case_meta else "")
-                # Rebuild the evald shape used by the batch path so the
-                # expander rendering below works unchanged.
-                from llm_classifier import ClassificationResult as _CR
-                regex_obj = _CR(**r["regex_result"])
-                evald = evaluate_results(case_meta, regex_obj, llm_res)
-                evald["case_id"] = r["case_id"]
-                evald["description"] = r["description"]
-                evald["expected_winner"] = r.get("expected_winner")
-                evald["regex_result"] = r["regex_result"]
-                evald["llm_result"] = llm_res.to_dict()
-                evald["llm_pitfall"] = r.get("llm_pitfall")
-                evald["gold_reasoning"] = r.get("gold_reasoning", "")
-                # Patch the in-memory list and persist to session state so
-                # the result survives a rerun.
+                # build_evald() rebuilds the per-case evald from the case
+                # metadata, so the new LLM result pairs with the right gold
+                # code and regex result. Patch the in-memory list and
+                # persist to session state so the update survives a rerun.
+                evald = build_evald(case_meta, llm_res)
                 results[i - 1] = evald
                 st.session_state["llm_results"] = results
+                st.session_state["llm_results_source"] = "live"
+                st.session_state.pop("llm_results_saved_at", None)
+                st.session_state.pop("llm_results_saved_model", None)
+                # Persist after each per-case run so the saved baseline
+                # picks up individual re-runs too.
+                try:
+                    save_results(results, model=cfg_now.model)
+                except OSError:
+                    pass
                 st.rerun()
 
             st.markdown("---")
