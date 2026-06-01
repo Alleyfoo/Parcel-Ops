@@ -1927,8 +1927,18 @@ def render_llm_showcase() -> None:
                 ok = r["llm_correct"]
                 icon = "✓" if ok else "✗"
                 color = "var(--ok, #1f8a4c)" if ok else "var(--crit, #c0392b)"
+                # Show the model that produced *this row*, not whatever is
+                # currently selected in the dropdown. Old saved rows didn't
+                # stamp a per-row model, so fall back to the saved-baseline
+                # model when source=="saved", and the live cfg otherwise.
+                row_model = llm.get("model") or (
+                    st.session_state.get("llm_results_saved_model", "")
+                    if results_source == "saved"
+                    else cfg_now.model
+                )
+                model_label = row_model or "no model"
                 st.markdown(
-                    f"**LLM ({cfg_now.model})** <span style='color:{color}'>{icon}</span>",
+                    f"**LLM ({model_label})** <span style='color:{color}'>{icon}</span>",
                     unsafe_allow_html=True,
                 )
                 if llm.get("is_mock"):

@@ -28,6 +28,11 @@ class ClassificationResult:
     correct: Optional[bool] = None
     latency_ms: Optional[float] = None
     is_mock: bool = True
+    # Model identifier (e.g. "gemma4:latest", "gemini-2.5-flash"). Recorded
+    # on the result so the per-case LLM column header reflects the model
+    # that actually produced the row, even if the user later changes the
+    # dropdown selection. Empty string for regex / mock / legacy results.
+    model: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -164,6 +169,7 @@ def classify_with_llm(
             reasoning=f"Call failed: {e!s}",
             latency_ms=None,
             is_mock=False,
+            model=cfg.model,
         )
 
     if "error" in parsed:
@@ -174,6 +180,7 @@ def classify_with_llm(
             reasoning=str(parsed["error"]),
             latency_ms=latency * 1000,
             is_mock=False,
+            model=cfg.model,
         )
 
     return ClassificationResult(
@@ -183,6 +190,7 @@ def classify_with_llm(
         reasoning=str(parsed.get("reasoning", "")).strip(),
         latency_ms=latency * 1000,
         is_mock=False,
+        model=cfg.model,
     )
 
 
