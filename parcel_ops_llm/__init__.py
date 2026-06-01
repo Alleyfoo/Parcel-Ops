@@ -101,7 +101,15 @@ def load_llm_config(
 # ---------------------------------------------------------------------------
 
 class LLMError(Exception):
-    pass
+    """Generic LLM client error."""
+
+
+class RateLimitError(LLMError):
+    """Raised on HTTP 429 from the provider. Carries retry_after hint when available."""
+
+    def __init__(self, message: str, retry_after: Optional[float] = None) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 def chat_completion(
@@ -152,6 +160,15 @@ def chat_completion(
             status = resp.status
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8", errors="replace")
+        # Detect 429 (rate limit) explicitly so callers can back off
+        # cleanly instead of treating it as a generic HTTP error.
+        if e.code == 429:
+            retry_after = _parse_retry_after(err_body)
+            raise RateLimitError(
+                f"Rate limited (HTTP 429). Free tier is ~5 requests/minute; "
+                f"wait {retry_after:.0f}s and retry.",
+                retry_after=retry_after,
+            ) from e
         raise LLMError(f"HTTP {e.code}: {err_body[:300]}") from e
     except urllib.error.URLError as e:
         raise LLMError(f"Network error: {e.reason}") from e
@@ -159,12 +176,35 @@ def chat_completion(
         raise LLMError(f"Request timed out after {cfg.timeout:.0f}s") from e
 
     if status >= 400:
+        if status == 429:
+            retry_after = _parse_retry_after(body)
+            raise RateLimitError(
+                f"Rate limited (HTTP 429). Free tier is ~5 requests/minute; "
+                f"wait {retry_after:.0f}s and retry.",
+                retry_after=retry_after,
+            )
         raise LLMError(f"HTTP {status}: {body[:300]}")
 
     try:
         return json.loads(body)
     except json.JSONDecodeError as e:
         raise LLMError(f"Non-JSON response: {body[:300]}") from e
+
+
+def _parse_retry_after(body: str) -> float:
+    """Best-effort extraction of a retry-after seconds value from a 429 body.
+
+    Falls back to 13 seconds (one slot past the 12-second free-tier
+    window) when the body doesn't carry a hint.
+    """
+    import re
+    m = re.search(r"retry[_\s]*after[^0-9]*([0-9]+(?:\.[0-9]+)?)", body, flags=re.IGNORECASE)
+    if m:
+        try:
+            return float(m.group(1))
+        except ValueError:
+            pass
+    return 13.0
 
 
 # ---------------------------------------------------------------------------
@@ -275,8 +315,21 @@ def classify_hs_code(
     user_prompt += "\n\nReturn the JSON object only."
 
     t0 = time.perf_counter()
-    raw = chat_completion(cfg, user_prompt)
-    latency = time.perf_counter() - t0
+    try:
+        raw = chat_completion(cfg, user_prompt)
+        latency = time.perf_counter() - t0
+    except RateLimitError as e:
+        latency = time.perf_counter() - t0
+        return (
+            {
+                "error": str(e),
+                "rate_limited": True,
+                "retry_after": e.retry_after,
+            },
+            latency,
+        )
+    except LLMError as e:
+        return ({"error": str(e)}, time.perf_counter() - t0)
 
     try:
         content = raw["choices"][0]["message"]["content"]
